@@ -12,15 +12,17 @@
 function TimeTracker() {
 
     var project_list;
+    var time_tracker_obj = this;
     
+    // Load all the saved projects
     this.reload_projects();
 
     // Create HTML
     this.create_dom_object();
-    var time_tracker_obj = this;
-    console.log("tracker loaded");
+    
 }
 
+// Return the next available key to store a project
 TimeTracker.prototype.get_new_project_serial = function() {
     
     // We need to check whether other projects
@@ -66,7 +68,7 @@ TimeTracker.prototype.add_new_project = function () {
         
     	// Create new project object
         var id = this.get_new_project_serial();
-        var time = 1;
+        var time = 0;
 		var project = new Project(id, project_name, time);
 		project.save();
 
@@ -224,11 +226,14 @@ Project.prototype.set_name = function() {}
 Project.prototype.get_name = function() {}
 
 Project.prototype.increment_time = function() {
-    this.time += 1;
+    this.time += 0.25;
     this.save();
 }
 
-Project.prototype.decrement_time = function() {}
+Project.prototype.decrement_time = function() {
+    this.time -= 0.25;
+    this.save();
+}
 
 Project.prototype.save = function() {
     // Save project name
@@ -252,6 +257,15 @@ Project.prototype.handle_increment_time = function(time_obj) {
  	
     // Update the model
     this.increment_time();
+    
+    // Update the DOM
+    time_obj.innerHTML = this.get_time();
+}
+
+Project.prototype.handle_decrement_time = function(time_obj) {
+ 	
+    // Update the model
+    this.decrement_time();
     
     // Update the DOM
     time_obj.innerHTML = this.get_time();
@@ -297,6 +311,9 @@ Project.prototype.get_dom_object = function () {
     new_project_subtract_time.innerHTML = "-";
     new_project_subtract_time.style.float = "left";
     project_obj.appendChild(new_project_subtract_time);
+    new_project_subtract_time.onclick = function() {
+		project.handle_decrement_time(new_project_time);	
+    }
 
     this.dom_obj = project_obj;
     return project_obj;
