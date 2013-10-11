@@ -30,7 +30,7 @@ TimeTracker.prototype.get_new_project_serial = function() {
 	return num_projects;
 }
 
-
+// Delete all the projects and clear the DOM
 TimeTracker.prototype.clear_projects = function () {
     var keys = GM_listValues();
     for (var i = 0, key = null; key = keys[i]; i++) {
@@ -41,9 +41,9 @@ TimeTracker.prototype.clear_projects = function () {
 }
 
 
-/*
- * Adds a new project to the tracker
- */
+//Adds a new project to the tracker
+// TODO: This has got some DOM code in it.  We should have
+// a separate function for handling the DOM stuff.
 TimeTracker.prototype.add_new_project = function () {
     
     
@@ -66,7 +66,7 @@ TimeTracker.prototype.add_new_project = function () {
         
     	// Create new project object
         var id = this.get_new_project_serial();
-        var time = "0:05";
+        var time = 1;
 		var project = new Project(id, project_name, time);
 		project.save();
 
@@ -79,8 +79,6 @@ TimeTracker.prototype.add_new_project = function () {
     }
 
 }
-
-
 
 
 // Reload this time tracker
@@ -110,7 +108,8 @@ TimeTracker.prototype.reload_projects = function() {
 }
 
 
-// Check if the DB has been updated
+// Check if the DB has been updated.
+// TODO:  Currently always reloads.
 TimeTracker.prototype.is_reload_required = function() {
     var reload;
  	reload = 1;   
@@ -119,6 +118,8 @@ TimeTracker.prototype.is_reload_required = function() {
 	return reload;
 }
 
+
+// ================================== DOM Functions ===============================
 
 // Create a DOM element for a project and return it.
 TimeTracker.prototype.add_project_DOM = function (project) {
@@ -129,12 +130,6 @@ TimeTracker.prototype.add_project_DOM = function (project) {
     this.project_list_obj.appendChild(project_obj);
 }
 
-
-
-
-
-
-// ================================== DOM Functions ===============================
 
 // TODO: Tidy up with jQuery
 // Generate all the DOM for the tracker
@@ -222,13 +217,16 @@ function Project(id, name, time) {
 
 Project.prototype.set_time = function() {}
 
-Project.prototype.get_time = function() {}
+Project.prototype.get_time = function() {return this.time}
 
 Project.prototype.set_name = function() {}
 
 Project.prototype.get_name = function() {}
 
-Project.prototype.increment_time = function() {}
+Project.prototype.increment_time = function() {
+    this.time += 1;
+    this.save();
+}
 
 Project.prototype.decrement_time = function() {}
 
@@ -246,9 +244,24 @@ Project.prototype.read = function() {}
 
 Project.prototype.delete = function() {}
 
+
+//============================================================================
+// Controller functions
+
+Project.prototype.handle_increment_time = function(time_obj) {
+ 	
+    // Update the model
+    this.increment_time();
+    
+    // Update the DOM
+    time_obj.innerHTML = this.get_time();
+}
+
 // Create a DOM element for a project and return it.
 Project.prototype.get_dom_object = function () {
 
+    var project = this;
+    
     // Create container
     var project_obj = document.createElement('div');
     project_obj.style.clear = "left";
@@ -274,6 +287,10 @@ Project.prototype.get_dom_object = function () {
     new_project_add_time.innerHTML = "+";
     new_project_add_time.style.float = "left";
     project_obj.appendChild(new_project_add_time);
+    // TODO:  Event handler
+    new_project_add_time.onclick = function() {
+		project.handle_increment_time(new_project_time);	
+    }
 
     // Create subtract time button
     var new_project_subtract_time = document.createElement("button");
