@@ -170,7 +170,7 @@ TimeTracker.prototype.create_dom_object = function () {
     // Create the main container modal window
     var overlay = document.createElement('div');
     overlay.id = "time_tracker";
-    overlay.style.position = "absolute";
+    overlay.style.position = "fixed";
     overlay.style.left = '0px';
     overlay.style.top = '0px';
     overlay.style.width = '100%';
@@ -185,7 +185,7 @@ TimeTracker.prototype.create_dom_object = function () {
     document.body.appendChild(overlay);
     
     var expand_button = document.createElement("button");
-    expand_button.style.position = "absolute";
+    expand_button.style.position = "fixed";
     expand_button.style.right = '0px';
     expand_button.style.top = '0px';
     expand_button.innerHTML = "+";
