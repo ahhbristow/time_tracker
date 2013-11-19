@@ -6,13 +6,12 @@
 // @match      http://tampermonkey.net/index.php?version=3.5.3630.14&ext=dhdg&updated=true
 // @copyright  2012+, You
 // ==/UserScript==
-
-function toggle(dom_element,display) {
-    if (dom_element.style.display == "none") {
-        dom_element.style.display = display;
-    } else {
-     	dom_element.style.display = "none"; 
-    }
+function toggle(dom_element, display) {
+	if (dom_element.style.display == "none") {
+		dom_element.style.display = display;
+	} else {
+		dom_element.style.display = "none";
+	}
 }
 
 
@@ -20,35 +19,35 @@ function toggle(dom_element,display) {
 
 function TimeTracker() {
 
-    var project_list;
-    var time_tracker_obj = this;
-    
-    // Load all the saved projects
-    this.reload_projects();
+	var project_list;
+	var time_tracker_obj = this;
 
-    // Create HTML
-    this.create_dom_object();
-    
+	// Load all the saved projects
+	this.reload_projects();
+
+	// Create HTML
+	this.create_dom_object();
+
 }
 
 // Return the next available key to store a project
-TimeTracker.prototype.get_new_project_serial = function() {
-    
-    // We need to check whether other projects
-    // have been added in another instance
-    var num_projects = GM_getValue("num_projects");
-    
+TimeTracker.prototype.get_new_project_serial = function () {
+
+	// We need to check whether other projects
+	// have been added in another instance
+	var num_projects = GM_getValue("num_projects");
+
 	return num_projects;
 }
 
 // Delete all the projects and clear the DOM
 TimeTracker.prototype.clear_projects = function () {
-    var keys = GM_listValues();
-    for (var i = 0, key = null; key = keys[i]; i++) {
-        GM_deleteValue(key);
-    }
-    
-    this.project_list_obj.innerHTML="";
+	var keys = GM_listValues();
+	for (var i = 0, key = null; key = keys[i]; i++) {
+		GM_deleteValue(key);
+	}
+
+	this.project_list_obj.innerHTML = "";
 }
 
 
@@ -56,89 +55,89 @@ TimeTracker.prototype.clear_projects = function () {
 // TODO: This has got some DOM code in it.  We should have
 // a separate function for handling the DOM stuff.
 TimeTracker.prototype.add_new_project = function () {
-    
-    
-    // TODO: We should check the 'DB' to see if
-    // the state has changed.
-    if(this.is_reload_required()) {
-    	this.reload_projects();
-        this.reload_project_list_dom();
-    }
-
-    // Retrieve values from the DOM
-    var project_name_obj = document.getElementById("new_project_name");
-    var project_name = project_name_obj.value
-    // Clear new project DOM object
-    project_name_obj.value = "";
 
 
-    // If name was supplied, create a project, save it and add to DOM
-    if (project_name != "") {
-        
-    	// Create new project object
-        var id = this.get_new_project_serial();
-        var time = 0;
-        
-        var date = new Date();
-        date = date.getDate() + "/" + date.getMonth() + "/" + date.getFullYear();
-        
+	// TODO: We should check the 'DB' to see if
+	// the state has changed.
+	if (this.is_reload_required()) {
+		this.reload_projects();
+		this.reload_project_list_dom();
+	}
+
+	// Retrieve values from the DOM
+	var project_name_obj = document.getElementById("new_project_name");
+	var project_name = project_name_obj.value
+	// Clear new project DOM object
+	project_name_obj.value = "";
+
+
+	// If name was supplied, create a project, save it and add to DOM
+	if (project_name != "") {
+
+		// Create new project object
+		var id = this.get_new_project_serial();
+		var time = 0;
+
+		var date = new Date();
+		date = date.getDate() + "/" + date.getMonth() + "/" + date.getFullYear();
+
 		var project = new Project(id, project_name, time, date);
 		project.save();
 
-    	// Update TimeTracker
-    	this.num_projects += 1;
-    	GM_setValue("num_projects", this.num_projects);
+		// Update TimeTracker
+		this.num_projects += 1;
+		GM_setValue("num_projects", this.num_projects);
 
-    	// Add project to the TimeTracker DOM object
-    	this.add_project_DOM(project);
-    }
+		// Add project to the TimeTracker DOM object
+		this.add_project_DOM(project);
+	}
 
 }
 
 
 // Reload this time tracker
-TimeTracker.prototype.reload_projects = function() {
-    
-    // Clear the project list
-    this.project_list = [];
-    this.project_list['dates'] = {};
+TimeTracker.prototype.reload_projects = function () {
 
-    // Read the number of existing projects
-    var num_projects = GM_getValue("num_projects");
-    if (num_projects == "undefined" || isNaN(num_projects)) {
-        this.num_projects = 0;
-        GM_setValue("num_projects", 0);
-    } else {
-        this.num_projects = num_projects;
-    }
-    console.log("Projects: " + this.num_projects);
+	// Clear the project list
+	this.project_list = [];
+	this.project_list['dates'] = {};
 
-    // Add the existing projects to the time tracker
-    for (var i = 0; i < this.num_projects; i++) {
-        var id = i;
-        var name = GM_getValue("project_name_" + i);
-        var time = GM_getValue("project_time_" + i);
-        var date = GM_getValue("project_date_" + i);
-        
-        // Init this date if not seen before
-        if (!this.project_list['dates'][date]) {
-        	this.project_list['dates'][date] = [];    
-        }
-        
-        var project = new Project(id, name, time, date);
-        this.project_list['dates'][date].push(project);
-    }
-    console.log(this.project_list);
+	// Read the number of existing projects
+	var num_projects = GM_getValue("num_projects");
+	if (num_projects == "undefined" || isNaN(num_projects)) {
+		this.num_projects = 0;
+		GM_setValue("num_projects", 0);
+	} else {
+		this.num_projects = num_projects;
+	}
+	console.log("Projects: " + this.num_projects);
+
+	// Add the existing projects to the time tracker
+	for (var i = 0; i < this.num_projects; i++) {
+		var id = i;
+		var name = GM_getValue("project_name_" + i);
+		var time = GM_getValue("project_time_" + i);
+		var date = GM_getValue("project_date_" + i);
+
+		// Init this date if not seen before
+		if (!this.project_list['dates'][date]) {
+			this.project_list['dates'][date] = [];
+		}
+
+		var project = new Project(id, name, time, date);
+		this.project_list['dates'][date].push(project);
+	}
+	console.log(this.project_list);
 }
 
 
 // Check if the DB has been updated.
 // TODO:  Currently always reloads.
-TimeTracker.prototype.is_reload_required = function() {
-    var reload;
- 	reload = 1;   
-    // Check the 'DB' to see if there is a new key.
- 
+TimeTracker.prototype.is_reload_required = function () {
+	var reload;
+	reload = 1;
+	// Check the 'DB' to see if there is a new key.
+
 	return reload;
 }
 
@@ -148,15 +147,15 @@ TimeTracker.prototype.is_reload_required = function() {
 // Create a DOM element for a project and add to the time tracker.
 TimeTracker.prototype.add_project_DOM = function (project) {
 
-    var project_obj = project.get_dom_object();
-    var project_list_obj = this.project_list_obj;
+	var project_obj = project.get_dom_object();
+	var project_list_obj = this.project_list_obj;
 
-    // If this date hasn't been seen before, create a new DOM object
-    
-    
-    
-    // Add it to this TimeTracker project list DOM object
-    this.project_list_obj.appendChild(project_obj);
+	// If this date hasn't been seen before, create a new DOM object
+
+
+
+	// Add it to this TimeTracker project list DOM object
+	this.project_list_obj.appendChild(project_obj);
 }
 
 
@@ -164,103 +163,103 @@ TimeTracker.prototype.add_project_DOM = function (project) {
 // Generate all the DOM for the tracker
 TimeTracker.prototype.create_dom_object = function () {
 
-    var time_tracker_obj = this;
-    var num_projects = this.num_projects;
+	var time_tracker_obj = this;
+	var num_projects = this.num_projects;
 
-    // Create the main container modal window
-    var overlay = document.createElement('div');
-    overlay.id = "time_tracker";
-    overlay.style.position = "fixed";
-    overlay.style.left = '0px';
-    overlay.style.top = '0px';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.zIndex = '10000';
-    overlay.style.backgroundColor = 'rgba(100,100,100,0.8)';
-    overlay.style.color = "#ddd";
-    overlay.style.display = "none";
-    overlay.style.display = "none";
-    overlay.style.display = "none";
-    
-    document.body.appendChild(overlay);
-    
-    var expand_button = document.createElement("button");
-    expand_button.style.position = "fixed";
-    expand_button.style.right = '0px';
-    expand_button.style.top = '0px';
-    expand_button.innerHTML = "+";
-    expand_button.style.zIndex = '10001';
+	// Create the main container modal window
+	var overlay = document.createElement('div');
+	overlay.id = "time_tracker";
+	overlay.style.position = "fixed";
+	overlay.style.left = '0px';
+	overlay.style.top = '0px';
+	overlay.style.width = '100%';
+	overlay.style.height = '100%';
+	overlay.style.zIndex = '10000';
+	overlay.style.backgroundColor = 'rgba(100,100,100,0.8)';
+	overlay.style.color = "#ddd";
+	overlay.style.display = "none";
+	overlay.style.display = "none";
+	overlay.style.display = "none";
+
+	document.body.appendChild(overlay);
+
+	var expand_button = document.createElement("button");
+	expand_button.style.position = "fixed";
+	expand_button.style.right = '0px';
+	expand_button.style.top = '0px';
+	expand_button.innerHTML = "+";
+	expand_button.style.zIndex = '10001';
 	expand_button.onclick = function () {
-        toggle(overlay,'block');
-    }
-    document.body.appendChild(expand_button);
+		toggle(overlay, 'block');
+	}
+	document.body.appendChild(expand_button);
 
-    // Create centre container
-    var centre_container = document.createElement('div');
-    overlay.appendChild(centre_container);
-    centre_container.style.padding = "30px";
-    centre_container.style.margin = "200px";
-    centre_container.style.border = "0px solid #ccc";
-    centre_container.style.borderRadius = "40px";
-    centre_container.style.backgroundColor = 'rgba(70,70,70,1.0)';
+	// Create centre container
+	var centre_container = document.createElement('div');
+	overlay.appendChild(centre_container);
+	centre_container.style.padding = "30px";
+	centre_container.style.margin = "200px";
+	centre_container.style.border = "0px solid #ccc";
+	centre_container.style.borderRadius = "40px";
+	centre_container.style.backgroundColor = 'rgba(70,70,70,1.0)';
 
-    
-    // create project list container
-    var project_list_obj = document.createElement('div');
-    project_list_obj.id = "projects";
-    centre_container.appendChild(project_list_obj);
-    this.project_list_obj = project_list_obj;
+
+	// create project list container
+	var project_list_obj = document.createElement('div');
+	project_list_obj.id = "projects";
+	centre_container.appendChild(project_list_obj);
+	this.project_list_obj = project_list_obj;
 
 
 	this.reload_project_list_dom();
 
 
-    // Create the controls
-    var controls_obj = document.createElement('div');
-    controls_obj.style.clear = "both";
-    centre_container.appendChild(controls_obj);
-    
-    var new_project_name = document.createElement('input');
-    new_project_name.style.clear = "left";
-    new_project_name.value = "";
-    new_project_name.id = "new_project_name";
-    controls_obj.appendChild(new_project_name);
+	// Create the controls
+	var controls_obj = document.createElement('div');
+	controls_obj.style.clear = "both";
+	centre_container.appendChild(controls_obj);
 
-    var add_button = document.createElement("button");
-    add_button.innerHTML = "Add Project";
-    add_button.id = "add_project";
-    add_button.onclick = function () {
-        time_tracker_obj.add_new_project();
-    }
-    controls_obj.appendChild(add_button);
+	var new_project_name = document.createElement('input');
+	new_project_name.style.clear = "left";
+	new_project_name.value = "";
+	new_project_name.id = "new_project_name";
+	controls_obj.appendChild(new_project_name);
 
-    var clear_button = document.createElement("button");
-    clear_button.innerHTML = "Clear All";
-    clear_button.id = "clear_projects";
-    clear_button.onclick = function () {
-        time_tracker_obj.clear_projects();
-    }
-    controls_obj.appendChild(clear_button);
+	var add_button = document.createElement("button");
+	add_button.innerHTML = "Add Project";
+	add_button.id = "add_project";
+	add_button.onclick = function () {
+		time_tracker_obj.add_new_project();
+	}
+	controls_obj.appendChild(add_button);
 
-    // Store reference to DOM obj as member var
-    this.time_tracker_obj = overlay;
+	var clear_button = document.createElement("button");
+	clear_button.innerHTML = "Clear All";
+	clear_button.id = "clear_projects";
+	clear_button.onclick = function () {
+		time_tracker_obj.clear_projects();
+	}
+	controls_obj.appendChild(clear_button);
+
+	// Store reference to DOM obj as member var
+	this.time_tracker_obj = overlay;
 }
 
 
 
 
-TimeTracker.prototype.reload_project_list_dom = function() {
-    // Create projects inside the project list
-    this.project_list_obj.innerHTML = "";
-    
-    for (date in this.project_list['dates']) {
-        console.log(date);
-        var project_list = this.project_list['dates'][date];
-        for (var i = 0; i < project_list.length; i++) {
-        	var project = project_list[i];
-        	var project_obj = this.add_project_DOM(project);           
-        }
-    }
+TimeTracker.prototype.reload_project_list_dom = function () {
+	// Create projects inside the project list
+	this.project_list_obj.innerHTML = "";
+
+	for (date in this.project_list['dates']) {
+		console.log(date);
+		var project_list = this.project_list['dates'][date];
+		for (var i = 0; i < project_list.length; i++) {
+			var project = project_list[i];
+			var project_obj = this.add_project_DOM(project);
+		}
+	}
 }
 
 
@@ -269,33 +268,35 @@ TimeTracker.prototype.reload_project_list_dom = function() {
 
 
 function Project(id, name, time, date) {
-    this.id   = id;
-    this.name = name;
+	this.id = id;
+	this.name = name;
 	this.time = time;
-    this.date = date;
-    
-    var dom_obj;
+	this.date = date;
+
+	var dom_obj;
 }
 
-Project.prototype.set_time = function() {}
+Project.prototype.set_time = function () {}
 
-Project.prototype.get_time = function() {return this.time}
-
-Project.prototype.set_name = function() {}
-
-Project.prototype.get_name = function() {}
-
-Project.prototype.increment_time = function() {
-    this.time += 0.25;
-    this.save();
+Project.prototype.get_time = function () {
+	return this.time
 }
 
-Project.prototype.decrement_time = function() {
-    this.time -= 0.25;
-    this.save();
+Project.prototype.set_name = function () {}
+
+Project.prototype.get_name = function () {}
+
+Project.prototype.increment_time = function () {
+	this.time += 0.25;
+	this.save();
 }
 
-Project.prototype.save = function() {
+Project.prototype.decrement_time = function () {
+	this.time -= 0.25;
+	this.save();
+}
+
+Project.prototype.save = function () {
 	// Save project name
 	var GM_project_name = 'project_name_' + this.id;
 	GM_setValue(GM_project_name, this.name);
@@ -303,116 +304,113 @@ Project.prototype.save = function() {
 	// Save project time
 	var GM_project_time = 'project_time_' + this.id;
 	GM_setValue(GM_project_time, this.time);
-	
+
 	// Save project date
 	var GM_project_date = 'project_date_' + this.id;
 	GM_setValue(GM_project_date, this.date);
 }
 
-Project.prototype.read = function() {}
+Project.prototype.read = function () {}
 
-Project.prototype.delete = function() {}
+Project.prototype.delete = function () {}
 
 
 //============================================================================
 // Controller functions
 
-Project.prototype.handle_increment_time = function(time_obj) {
- 	
-    // Update the model
-    this.increment_time();
-    
-    // Update the DOM
-    time_obj.innerHTML = this.get_time();
+Project.prototype.handle_increment_time = function (time_obj) {
+
+	// Update the model
+	this.increment_time();
+
+	// Update the DOM
+	time_obj.innerHTML = this.get_time();
 }
 
-Project.prototype.handle_decrement_time = function(time_obj) {
- 	
-    // Update the model
-    this.decrement_time();
-    
-    // Update the DOM
-    time_obj.innerHTML = this.get_time();
+Project.prototype.handle_decrement_time = function (time_obj) {
+
+	// Update the model
+	this.decrement_time();
+
+	// Update the DOM
+	time_obj.innerHTML = this.get_time();
 }
 
 // Create a DOM element for a project and return it.
 Project.prototype.get_dom_object = function () {
 
-    var project = this;
-    
-    // Create container
-    var project_obj = document.createElement('div');
-    project_obj.style.clear = "left";
-    project_obj.style.color = '#ddd';
+	var project = this;
 
-    // Create name display
-    var new_project_name = document.createElement("span");
-    new_project_name.innerHTML = this.date + ":   " + this.name;
-    new_project_name.style.width = "200px";
-    new_project_name.style.display = "block";
-    new_project_name.style.float = "left";
-    new_project_name.style.color = "#ddd";
-    project_obj.appendChild(new_project_name);
+	// Create container
+	var project_obj = document.createElement('div');
+	project_obj.style.clear = "left";
+	project_obj.style.color = '#ddd';
+
+	// Create name display
+	var new_project_name = document.createElement("span");
+	new_project_name.innerHTML = this.date + ":   " + this.name;
+	new_project_name.style.width = "200px";
+	new_project_name.style.display = "block";
+	new_project_name.style.float = "left";
+	new_project_name.style.color = "#ddd";
+	project_obj.appendChild(new_project_name);
 
 	// Create time display
-    var new_project_time = document.createElement("span");
-    new_project_time.style.width = "50px";
-    new_project_time.style.display = "block";
-    new_project_time.style.float = "left";
-    new_project_time.innerHTML = this.time;
-    new_project_time.style.color = "#ddd";
-    project_obj.appendChild(new_project_time);
+	var new_project_time = document.createElement("span");
+	new_project_time.style.width = "50px";
+	new_project_time.style.display = "block";
+	new_project_time.style.float = "left";
+	new_project_time.innerHTML = this.time;
+	new_project_time.style.color = "#ddd";
+	project_obj.appendChild(new_project_time);
 
-    // Create add time button
-    var new_project_add_time = document.createElement("button");
-    new_project_add_time.innerHTML = "+";
-    new_project_add_time.style.float = "left";
-    project_obj.appendChild(new_project_add_time);
-    // TODO:  Event handler
-    new_project_add_time.onclick = function() {
-		project.handle_increment_time(new_project_time);	
-    }
+	// Create add time button
+	var new_project_add_time = document.createElement("button");
+	new_project_add_time.innerHTML = "+";
+	new_project_add_time.style.float = "left";
+	project_obj.appendChild(new_project_add_time);
+	// TODO:  Event handler
+	new_project_add_time.onclick = function () {
+		project.handle_increment_time(new_project_time);
+	}
 
-    // Create subtract time button
-    var new_project_subtract_time = document.createElement("button");
-    new_project_subtract_time.innerHTML = "-";
-    new_project_subtract_time.style.float = "left";
-    project_obj.appendChild(new_project_subtract_time);
-    new_project_subtract_time.onclick = function() {
-		project.handle_decrement_time(new_project_time);	
-    }
+	// Create subtract time button
+	var new_project_subtract_time = document.createElement("button");
+	new_project_subtract_time.innerHTML = "-";
+	new_project_subtract_time.style.float = "left";
+	project_obj.appendChild(new_project_subtract_time);
+	new_project_subtract_time.onclick = function () {
+		project.handle_decrement_time(new_project_time);
+	}
 
-    this.dom_obj = project_obj;
-    return project_obj;
+	this.dom_obj = project_obj;
+	return project_obj;
 }
 
+test_time_tracker();
 document.time_tracker = new TimeTracker();
 
 
 
 
-
 function test_time_tracker() {
-    var keys = GM_listValues();
-    for (var i = 0, key = null; key = keys[i]; i++) {
-        GM_deleteValue(key);
-    }
-    
-    GM_setValue('num_projects',4);
+
+
+	GM_setValue('num_projects', 4);
 	GM_setValue('project_name_0', 'Project 1');
-    GM_setValue('project_time_0', '5:00');
+	GM_setValue('project_time_0', '5:00');
 	GM_setValue('project_date_0', '16/11/2013');
-    
-   	GM_setValue('project_name_1', 'Project 2');
-    GM_setValue('project_time_1', '1:00');
-	GM_setValue('project_date_1', '16/11/2013');  
-    
+
+	GM_setValue('project_name_1', 'Project 2');
+	GM_setValue('project_time_1', '1:00');
+	GM_setValue('project_date_1', '16/11/2013');
+
 	GM_setValue('project_name_2', 'Project 3');
-    GM_setValue('project_time_2', '4:00');
+	GM_setValue('project_time_2', '4:00');
 	GM_setValue('project_date_2', '17/11/2013');
-    
+
 	GM_setValue('project_name_3', 'Project 4');
-    GM_setValue('project_time_3', '1:00');
-	GM_setValue('project_date_3', '18/11/2013');  
-    
+	GM_setValue('project_time_3', '1:00');
+	GM_setValue('project_date_3', '18/11/2013');
+
 }
