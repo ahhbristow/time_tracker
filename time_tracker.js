@@ -496,9 +496,6 @@ TimeTracker.prototype.handle_clear_projects = function() {
 
 $(document).ready(function () {
 
-	if (Number(localStorage.num_projects) === 0) {
-		test_time_tracker();
-	}
 	create_stylesheet();
 	document.time_tracker = new TimeTracker();
 
