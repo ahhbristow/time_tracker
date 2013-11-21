@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TimeTracker
 // @namespace  
-// @version      1.1
+// @version      1.2
 // @description  Modal window to track projects worked on by date     
 // @match        http://tampermonkey.net/index.php?version=3.5.3630.14&ext=dhdg&updated=true
 // @copyright    2012+, Shaun Bristow
