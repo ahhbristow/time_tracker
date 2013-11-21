@@ -67,11 +67,11 @@ function create_stylesheet() {
 }
 
 function set_value(key, value) {
-	localStorage[key] = value;
+	GM_setValue(key,value);
 }
 
 function get_value(key) {
-	var value = localStorage[key];
+	var value = GM_getValue(key);
 	return value;
 }
 
@@ -105,9 +105,14 @@ TimeTracker.prototype.get_new_project_serial = function () {
 // Delete all the projects and clear the DOM
 // TODO:  Replace with project.delete();
 TimeTracker.prototype.clear_projects = function () {
-	for (var key in localStorage) {
-		console.log("Removing key: " + key);
-		localStorage.removeItem(key);
+	//for (var key in localStorage) {
+	//console.log("Removing key: " + key);
+	//localStorage.removeItem(key);
+	//}
+	//
+	var keys = GM_listValues();
+	for (var i=0, key=null; key=keys[i]; i++) {
+		GM_deleteValue(key);
 	}
 
 }
