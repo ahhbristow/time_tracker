@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name       TimeTracker
-// @namespace  http://use.i.E.your.homepage/
-// @version    1.0
-// @description  enter something useful
-// @match      http://tampermonkey.net/index.php?version=3.5.3630.14&ext=dhdg&updated=true
-// @copyright  2012+, You
-// @include  http://*/*
-// @require http://code.jquery.com/jquery-1.10.2.min.js
+// @name         TimeTracker
+// @namespace  
+// @version      1.1
+// @description  Modal window to track projects worked on by date     
+// @match        http://tampermonkey.net/index.php?version=3.5.3630.14&ext=dhdg&updated=true
+// @copyright    2012+, Shaun Bristow
+// @include      http://*/*
+// @require      http://code.jquery.com/jquery-1.10.2.min.js
 // ==/UserScript==
 //
 //
