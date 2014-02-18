@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TimeTracker
 // @namespace  
-// @version      1.4
+// @version      1.5
 // @description  Modal window to track projects worked on by date     
 // @match        http://tampermonkey.net/index.php?version=3.5.3630.14&ext=dhdg&updated=true
 // @copyright    2012+, Shaun Bristow
@@ -67,12 +67,35 @@ function create_stylesheet() {
 }
 
 function set_value(key, value) {
-	GM_setValue(key,value);
+    if(use_local_storage) {
+        localStorage[key] = value;
+    } else {
+		GM_setValue(key,value);
+    }
 }
 
 function get_value(key) {
-	var value = GM_getValue(key);
+    if(use_local_storage) {
+        var value = localStorage[key]
+    } else {
+		var value = GM_getValue(key);
+    }
 	return value;
+}
+
+function dump_storage() {
+    var values = GM_listValues();
+    
+    for (var i = 0; i < values.length; i++) {
+		var text = GM_getValue(values[i]);
+        console.log(values[i] + "," + text);
+    }
+	//for (var val in GM_listValues()) {
+		//var text = GM_getValue(val);
+        //console.log(val + ", " + text);
+    //}
+    
+    console.log(values);
 }
 
 
@@ -105,15 +128,16 @@ TimeTracker.prototype.get_new_project_serial = function () {
 // Delete all the projects and clear the DOM
 // TODO:  Replace with project.delete();
 TimeTracker.prototype.clear_projects = function () {
-	//for (var key in localStorage) {
-	//console.log("Removing key: " + key);
-	//localStorage.removeItem(key);
-	//}
-	//
-	var keys = GM_listValues();
-	for (var i=0, key=null; key=keys[i]; i++) {
-		GM_deleteValue(key);
-	}
+
+    if(use_local_storage) {
+		localStorage.clear();
+    } else {
+		var keys = GM_listValues();
+		for (var i = 0; i < keys.length; i++) {
+        	console.log("Deleting: " + keys[i]);
+			GM_deleteValue(keys[i]);
+		}
+    }
 
 }
 
@@ -132,43 +156,42 @@ TimeTracker.prototype.init_date = function(date) {
 	}
 }
 
-//Adds a new project to the tracker
-// TODO: This has got some DOM code in it.  We should have
-// a separate function for handling the DOM stuff.
+
+/*
+ * Adds a new project to the tracker with the given project name.
+ */
 TimeTracker.prototype.add_new_project = function (project_name) {
 
 	console.log("Adding project: " + project_name);
+	    
+    // Create the new project object
 	var id = this.get_new_project_serial();
 	var time = 0;
 	var date = new Date();
 	date = date.getDate() + "_" + date.getMonth() + "_" + date.getFullYear();
-
 	var project = new Project(id, project_name, time, date);
-	project.save();
-
-	// If save was successful, update the model
-	
-	// We may not have seen this date before
-	if (!this.dates[date]) {
-		this.init_date(date);
-	}
-	this.dates[date].projects.push(project);
-	this.projects[id] = project;
-
-	// Update TimeTracker global state
-	this.num_projects += 1;
-	set_value("num_projects", this.num_projects);
-
+    
+    // Update TimeTracker global state
+    project.save();
+    var num_projects = Number(get_value("num_projects"));
+	num_projects += 1;
+	set_value("num_projects", num_projects);
+    
+    // Need to rebuild the model here
+    this.reload_projects();
 }
 
-// Reload this time tracker
+/* 
+ *  Rebuilds the model by retrieving all the projects from local storage
+ */ 
 TimeTracker.prototype.reload_projects = function () {
 
-	// Clear the project list
+	// Clear this TimeTracker's
+    // list of projects
 	this.dates = {};
 	this.projects = {};
-
-	// Read the number of existing projects
+    
+    // Read the number of projects.  TODO: Replace as this is not normalised
 	var num_projects = Number(get_value("num_projects"));
 	if (num_projects == "undefined" || isNaN(num_projects)) {
 		this.num_projects = 0;
@@ -176,10 +199,10 @@ TimeTracker.prototype.reload_projects = function () {
 	} else {
 		this.num_projects = num_projects;
 	}
+    console.log("Number of projects to retrieve: " + num_projects);
 
 	// Add the existing projects to the time tracker
 	for (var i = 0; i < this.num_projects; i++) {
-
 		var id = i;
 		var name = get_value("project_name_" + i);
 		var time = Number(get_value("project_time_" + i));
@@ -191,6 +214,7 @@ TimeTracker.prototype.reload_projects = function () {
 		}
 
 		var project = new Project(id, name, time, date);
+        console.log("Retrieving project: (" + id + ", " + name + ", " + date + ", " + time + ")");
 
 		// Push project to both dates array and projects array.
 		// Convenient for later
@@ -211,11 +235,12 @@ TimeTracker.prototype.is_reload_required = function () {
 }
 
 
+
+
+
 // ================================== DOM Functions ===============================
 
 
-
-// TODO: Convert to jQuery
 // Create a DOM element for a project and add to the time tracker.
 TimeTracker.prototype.add_project_DOM = function (project, date) {
 
@@ -315,24 +340,14 @@ TimeTracker.prototype.get_project_list_html = function () {
 
 }
 
-// Create a DOM element for a project and return it.
-Project.prototype.get_html = function () {
 
-
-	var html = '';
-	html += '<div class="project clearfix">';
-	html += '<span class="name">' + this.name + '</span>';
-	html += '<span class="time">' + this.time + '</span>';
-	html += '<button class="add_time" data-project_id="' + this.id + '">+</button>';
-	html += '<button class="subtract_time" data-project_id="' + this.id + '">-</button>';
-	html += '</div>';
-
-	return html;
-}
-
+/*
+ * Register all the DOM event handlers.  These are just basic handlers
+ * that call functions in the TimeTracker controller.
+ */
 TimeTracker.prototype.register_event_handlers = function () {
 
-	// Register handlers for adding time
+	// Add time to a project
 	var time_tracker = this;
 	$(document).on('click', '.add_time', function () {
 		var project_id = $(this).attr('data-project_id');
@@ -340,7 +355,8 @@ TimeTracker.prototype.register_event_handlers = function () {
 		time_tracker.handle_increment_time(project_id);
 
 	});
-	// Register handlers for adding time
+    
+	// Subtract time from a project
 	var time_tracker = this;
 	$(document).on('click', '.subtract_time', function () {
 		var project_id = $(this).attr('data-project_id');
@@ -348,30 +364,33 @@ TimeTracker.prototype.register_event_handlers = function () {
 		time_tracker.handle_decrement_time(project_id);
 	});
 
-
+	// Expand/collapse a particular date's project list
 	$(document).on('click', '.expand_projects', function () {
 		var date = $(this).attr('data-date');
 		time_tracker.handle_date_expand(date);
 	});
 
+    // Add a new project to the TimeTracker
 	$(document).on('click', '#add_project', function () {
 		var project_name = $("#new_project_name").val();
 		time_tracker.handle_add_project(project_name);
 	});
 
+    // Remove all projects from the TimeTracker
 	$(document).on('click', '#clear_projects', function () {
 		time_tracker.handle_clear_projects();
 	});
 
+    // Expand/collapse the TimeTracker
 	$(document).on('click', '#time_tracker_expand', function () {
 		$('#time_tracker').toggle();
 	});
 }
 
 
-//========================================================================================
-// Project class
 
+
+// =========================== Project MODEL ==========================================
 
 function Project(id, name, time, date) {
 	this.id = id;
@@ -415,7 +434,7 @@ Project.prototype.save = function () {
 	var GM_project_date = 'project_date_' + this.id;
 	set_value(GM_project_date, this.date);
 
-	console.log("Saving project: " + this.id);
+	console.log("Saving project: " + this.id + "," + this.name + "," + this.date + "," + this.time);
 }
 
 Project.prototype.read = function () {
@@ -429,9 +448,34 @@ Project.prototype.read = function () {
 Project.prototype.delete = function () {}
 
 
-//============================================================================
-// Controller functions
+// ======================== Project VIEW ====================================
 
+// Create a DOM element for a project and return it.
+Project.prototype.get_html = function () {
+
+
+	var html = '';
+	html += '<div class="project clearfix">';
+	html += '<span class="name">' + this.name + '</span>';
+	html += '<span class="time">' + this.time + '</span>';
+	html += '<button class="add_time" data-project_id="' + this.id + '">+</button>';
+	html += '<button class="subtract_time" data-project_id="' + this.id + '">-</button>';
+	html += '</div>';
+
+	return html;
+}
+
+
+//========================== TimeTracker CONTROLLER ==========================
+
+/*
+ * These functions are the top level event handlers, and are called when
+ * events are triggered.
+ */
+
+/*
+ * Add a unit of time to Project with project_id
+ */
 TimeTracker.prototype.handle_increment_time = function (project_id) {
 
 	console.log("handle_increment_time: " + project_id);
@@ -443,9 +487,13 @@ TimeTracker.prototype.handle_increment_time = function (project_id) {
 	project.increment_time();
 	project.save();
 
+    // Re-render the TimeTracker
 	this.render();
 }
 
+/*
+ *  Subtract a unit of time from Project with project_id
+ */
 TimeTracker.prototype.handle_decrement_time = function (project_id) {
 
 	// Read the project
@@ -455,15 +503,18 @@ TimeTracker.prototype.handle_decrement_time = function (project_id) {
 	project.decrement_time();
 	project.save();
 
+    // Re-render the TimeTracker
 	this.render();
 }
 
-// Just expand the project list for this date
+/*
+ * Event handler for clicking the expand button.  Toggles the display
+ * of the TimeTracker
+ */
 TimeTracker.prototype.handle_date_expand = function (date) {
-	console.log("Expanding: " + date);
 
-
-	// TODO:  Update model here to set displayed = 1
+	// Toggle the display of this date object in the
+    // TimeTracker
 	var tracker_date = this.dates[date];
 	if (tracker_date.displayed == 1) {
 		tracker_date.displayed = 0;
@@ -471,10 +522,13 @@ TimeTracker.prototype.handle_date_expand = function (date) {
 		tracker_date.displayed = 1;
 	}
 
-	// Should re-render
+	// Re-render everything
 	this.render();
 }
 
+/*
+ * 
+ */
 TimeTracker.prototype.handle_add_project = function (project_name) {
 
 	// Retrieve the values and create new project in model
@@ -482,11 +536,15 @@ TimeTracker.prototype.handle_add_project = function (project_name) {
 
 	// This is a convenient time to see if we have any other updates	
 	if (this.is_reload_required()) {
-		this.reload_projects();
+        console.log("Reload required, projects added elsewhere");
+		
 	}
 	this.render();
 }
 
+/*
+ * 
+ */
 TimeTracker.prototype.handle_clear_projects = function() {
 
 	this.clear_projects();
@@ -496,11 +554,11 @@ TimeTracker.prototype.handle_clear_projects = function() {
 	this.render();
 }
 
-// =======================================================================================
-// Start
+// ================================= Main Program Body ==================================
 
 $(document).ready(function () {
 
+    use_local_storage = 0;
 	create_stylesheet();
 	document.time_tracker = new TimeTracker();
 
