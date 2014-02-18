@@ -11,11 +11,8 @@
 // ==/UserScript==
 //
 //
-
-
 // ===================================================================================
 // Utilities
-
 function toggle(dom_element, display) {
 	console.log("Toggling: Old display: " + dom_element.style.display + ", New display: " + display);
 	if (dom_element.style.display != display) {
@@ -67,35 +64,35 @@ function create_stylesheet() {
 }
 
 function set_value(key, value) {
-    if(use_local_storage) {
-        localStorage[key] = value;
-    } else {
-		GM_setValue(key,value);
-    }
+	if (use_local_storage) {
+		localStorage[key] = value;
+	} else {
+		GM_setValue(key, value);
+	}
 }
 
 function get_value(key) {
-    if(use_local_storage) {
-        var value = localStorage[key]
-    } else {
+	if (use_local_storage) {
+		var value = localStorage[key]
+	} else {
 		var value = GM_getValue(key);
-    }
+	}
 	return value;
 }
 
 function dump_storage() {
-    var values = GM_listValues();
-    
-    for (var i = 0; i < values.length; i++) {
+	var values = GM_listValues();
+
+	for (var i = 0; i < values.length; i++) {
 		var text = GM_getValue(values[i]);
-        console.log(values[i] + "," + text);
-    }
+		console.log(values[i] + "," + text);
+	}
 	//for (var val in GM_listValues()) {
-		//var text = GM_getValue(val);
-        //console.log(val + ", " + text);
-    //}
-    
-    console.log(values);
+	//var text = GM_getValue(val);
+	//console.log(val + ", " + text);
+	//}
+
+	console.log(values);
 }
 
 
@@ -129,20 +126,20 @@ TimeTracker.prototype.get_new_project_serial = function () {
 // TODO:  Replace with project.delete();
 TimeTracker.prototype.clear_projects = function () {
 
-    if(use_local_storage) {
+	if (use_local_storage) {
 		localStorage.clear();
-    } else {
+	} else {
 		var keys = GM_listValues();
 		for (var i = 0; i < keys.length; i++) {
-        	console.log("Deleting: " + keys[i]);
+			console.log("Deleting: " + keys[i]);
 			GM_deleteValue(keys[i]);
 		}
-    }
+	}
 
 }
 
 // Initialises an empty date in this time_tracker
-TimeTracker.prototype.init_date = function(date) {
+TimeTracker.prototype.init_date = function (date) {
 
 	var displayed = 0;
 	var today = new Date();
@@ -151,8 +148,8 @@ TimeTracker.prototype.init_date = function(date) {
 	}
 
 	this['dates'][date] = {
-	   'displayed': displayed,
-	   'projects': []
+		'displayed': displayed,
+		'projects': []
 	}
 }
 
@@ -163,35 +160,35 @@ TimeTracker.prototype.init_date = function(date) {
 TimeTracker.prototype.add_new_project = function (project_name) {
 
 	console.log("Adding project: " + project_name);
-	    
-    // Create the new project object
+
+	// Create the new project object
 	var id = this.get_new_project_serial();
 	var time = 0;
 	var date = new Date();
 	date = date.getDate() + "_" + date.getMonth() + "_" + date.getFullYear();
 	var project = new Project(id, project_name, time, date);
-    
-    // Update TimeTracker global state
-    project.save();
-    var num_projects = Number(get_value("num_projects"));
+
+	// Update TimeTracker global state
+	project.save();
+	var num_projects = Number(get_value("num_projects"));
 	num_projects += 1;
 	set_value("num_projects", num_projects);
-    
-    // Need to rebuild the model here
-    this.reload_projects();
+
+	// Need to rebuild the model here
+	this.reload_projects();
 }
 
 /* 
  *  Rebuilds the model by retrieving all the projects from local storage
- */ 
+ */
 TimeTracker.prototype.reload_projects = function () {
 
 	// Clear this TimeTracker's
-    // list of projects
+	// list of projects
 	this.dates = {};
 	this.projects = {};
-    
-    // Read the number of projects.  TODO: Replace as this is not normalised
+
+	// Read the number of projects.  TODO: Replace as this is not normalised
 	var num_projects = Number(get_value("num_projects"));
 	if (num_projects == "undefined" || isNaN(num_projects)) {
 		this.num_projects = 0;
@@ -199,7 +196,7 @@ TimeTracker.prototype.reload_projects = function () {
 	} else {
 		this.num_projects = num_projects;
 	}
-    console.log("Number of projects to retrieve: " + num_projects);
+	console.log("Number of projects to retrieve: " + num_projects);
 
 	// Add the existing projects to the time tracker
 	for (var i = 0; i < this.num_projects; i++) {
@@ -214,7 +211,7 @@ TimeTracker.prototype.reload_projects = function () {
 		}
 
 		var project = new Project(id, name, time, date);
-        console.log("Retrieving project: (" + id + ", " + name + ", " + date + ", " + time + ")");
+		console.log("Retrieving project: (" + id + ", " + name + ", " + date + ", " + time + ")");
 
 		// Push project to both dates array and projects array.
 		// Convenient for later
@@ -237,7 +234,6 @@ TimeTracker.prototype.is_reload_required = function () {
 
 
 
-
 // ================================== DOM Functions ===============================
 
 
@@ -253,12 +249,12 @@ TimeTracker.prototype.add_project_DOM = function (project, date) {
 
 
 // Redraw just the centre container
-TimeTracker.prototype.render = function() {
-	
+TimeTracker.prototype.render = function () {
+
 	$('#centre_container').remove();
 	var tracker_html = this.get_tracker_html();
 	$('#time_tracker').append(tracker_html);
-	
+
 }
 
 // TODO: Convert to jQuery
@@ -282,14 +278,14 @@ TimeTracker.prototype.get_tracker_html = function () {
 	html += '         <button id="clear_projects">Clear All</button>';
 	html += '      </div>';
 	html += '   </div>';
-	
+
 	return html;
 
 }
 
 // Only called on startup.  Renders the main container
-TimeTracker.prototype.render_container = function() {
-	
+TimeTracker.prototype.render_container = function () {
+
 	var html = '';
 	html += '<button id="time_tracker_expand">+</button>';
 	html += '<div id="time_tracker">'
@@ -355,7 +351,7 @@ TimeTracker.prototype.register_event_handlers = function () {
 		time_tracker.handle_increment_time(project_id);
 
 	});
-    
+
 	// Subtract time from a project
 	var time_tracker = this;
 	$(document).on('click', '.subtract_time', function () {
@@ -370,18 +366,18 @@ TimeTracker.prototype.register_event_handlers = function () {
 		time_tracker.handle_date_expand(date);
 	});
 
-    // Add a new project to the TimeTracker
+	// Add a new project to the TimeTracker
 	$(document).on('click', '#add_project', function () {
 		var project_name = $("#new_project_name").val();
 		time_tracker.handle_add_project(project_name);
 	});
 
-    // Remove all projects from the TimeTracker
+	// Remove all projects from the TimeTracker
 	$(document).on('click', '#clear_projects', function () {
 		time_tracker.handle_clear_projects();
 	});
 
-    // Expand/collapse the TimeTracker
+	// Expand/collapse the TimeTracker
 	$(document).on('click', '#time_tracker_expand', function () {
 		$('#time_tracker').toggle();
 	});
@@ -487,7 +483,7 @@ TimeTracker.prototype.handle_increment_time = function (project_id) {
 	project.increment_time();
 	project.save();
 
-    // Re-render the TimeTracker
+	// Re-render the TimeTracker
 	this.render();
 }
 
@@ -503,7 +499,7 @@ TimeTracker.prototype.handle_decrement_time = function (project_id) {
 	project.decrement_time();
 	project.save();
 
-    // Re-render the TimeTracker
+	// Re-render the TimeTracker
 	this.render();
 }
 
@@ -514,7 +510,7 @@ TimeTracker.prototype.handle_decrement_time = function (project_id) {
 TimeTracker.prototype.handle_date_expand = function (date) {
 
 	// Toggle the display of this date object in the
-    // TimeTracker
+	// TimeTracker
 	var tracker_date = this.dates[date];
 	if (tracker_date.displayed == 1) {
 		tracker_date.displayed = 0;
@@ -527,7 +523,7 @@ TimeTracker.prototype.handle_date_expand = function (date) {
 }
 
 /*
- * 
+ *
  */
 TimeTracker.prototype.handle_add_project = function (project_name) {
 
@@ -536,16 +532,16 @@ TimeTracker.prototype.handle_add_project = function (project_name) {
 
 	// This is a convenient time to see if we have any other updates	
 	if (this.is_reload_required()) {
-        console.log("Reload required, projects added elsewhere");
-		
+		console.log("Reload required, projects added elsewhere");
+
 	}
 	this.render();
 }
 
 /*
- * 
+ *
  */
-TimeTracker.prototype.handle_clear_projects = function() {
+TimeTracker.prototype.handle_clear_projects = function () {
 
 	this.clear_projects();
 
@@ -558,7 +554,7 @@ TimeTracker.prototype.handle_clear_projects = function() {
 
 $(document).ready(function () {
 
-    use_local_storage = 0;
+	use_local_storage = 0;
 	create_stylesheet();
 	document.time_tracker = new TimeTracker();
 
