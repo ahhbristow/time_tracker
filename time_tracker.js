@@ -1,18 +1,5 @@
-// ==UserScript==
-// @name         TimeTracker
-// @namespace  
-// @version      1.5
-// @description  Modal window to track projects worked on by date     
-// @match        http://tampermonkey.net/index.php?version=3.5.3630.14&ext=dhdg&updated=true
-// @copyright    2012+, Shaun Bristow
-// @include      *
-// @noframes
-// @require      http://code.jquery.com/jquery-1.10.2.min.js
-// ==/UserScript==
-//
-//
-// ===================================================================================
-// Utilities
+
+// ========================== UTILITIES ======================================
 function toggle(dom_element, display) {
 	console.log("Toggling: Old display: " + dom_element.style.display + ", New display: " + display);
 	if (dom_element.style.display != display) {
@@ -56,28 +43,16 @@ function create_stylesheet() {
 	add_global_style('#time_tracker .project .name {width: 200px; display: block; float: left; color: #ddd}');
 	add_global_style('#time_tracker .project .time {width: 50px; display: block; float: left; color: #ddd}');
 	add_global_style('#time_tracker .project button {float: left; margin: 0px; width: 30px; height; 30px; padding: 0px}');
+	
+	
+	add_global_style('#time_tracker #msgs .msg {padding: 10px; border: 2px solid; border-color: white; border-radius: 40px; color: white}');
+	add_global_style('#time_tracker #msgs .msg.success {background-color: green;}');
+	add_global_style('#time_tracker #msgs .msg.error {background-color: red;}');
 
 
 	add_global_style('.clearfix:after {content: "."; display: block; clear: both; visibility: hidden; line-height: 0; height: 0;');
 	add_global_style('html[xmlns] .clearfix {display: block;}');
 	add_global_style('* html .clearfix {height: 1%;}');
-}
-
-function set_value(key, value) {
-	if (use_local_storage) {
-		localStorage[key] = value;
-	} else {
-		GM_setValue(key, value);
-	}
-}
-
-function get_value(key) {
-	if (use_local_storage) {
-		var value = localStorage[key]
-	} else {
-		var value = GM_getValue(key);
-	}
-	return value;
 }
 
 function dump_storage() {
@@ -96,20 +71,133 @@ function dump_storage() {
 }
 
 
-// ===============================================================================================
+// ================= Persistence Layer ================================
+
+function PersistenceLayer(use_local_storage) {
+	this.use_local_storage = use_local_storage;
+}
+
+PersistenceLayer.prototype.set_value = function(key, value) {
+	if (this.use_local_storage) {
+		localStorage[key] = value;
+	} else {
+		GM_setValue(key, value);
+	}
+
+	return {status_value: 0};
+}
+
+PersistenceLayer.prototype.get_value = function(key) {
+	if (this.use_local_storage) {
+		var value = localStorage[key]
+	} else {
+		var value = GM_getValue(key);
+	}
+	return {status_value: 0, return_value: value};
+}
+
+PersistenceLayer.prototype.delete_value = function(key) {
+	if (this.use_local_storage) {
+		localStorage.removeItem(key);
+	} else {
+		GM_deleteValue(key);
+	}
+	return {status_value: 0, return_value: value};
+}
+
+/*
+ * Queries the storage to find all the projects.  When using GM, these are stored as
+ * key value pairs like this:
+ *    key   = "tt:project:[PROJECT_ID]"
+ *    value = "project_name|project_date|project_time" 
+ */
+PersistenceLayer.prototype.get_projects = function() {
+
+	console.log("Getting projects from storage");
+	var keys = GM_listValues();
+	var projects;
+	for (var i = 0; i < keys.length; i++) {
+
+		// Tokenize the key
+		var key       = keys[i];
+		var key_parts = key.split("|");
+		var id        = key_parts[2];
+
+		console.log("Key: " + key);
+		// This is a project so we should retrive
+		if (key_parts[0] === "tt" && key_parts[1] === "project") {
+	
+			console.log("key valid");	
+			var project_data = GM_getValue(key);
+
+			// Parse the project data, pipe separated
+			var data_parts = project_data.split("|");
+			
+			// If the data doesn't have three parts, something
+			// has gone wrong so just return an error
+			if (data_parts.length != 3 || !this.is_valid_project(project_data)) {
+				console.log("Error");
+				return {status_code: 1, return_value: ""};
+			}
+
+			var name = data_parts[0];
+			var date = data_parts[1];
+			var time = data_parts[2];
+			var project = new Project(id,name,date,time);
+			projects[id] = project;
+			console.log("Found project (" + key + ", " + project_data);
+		}	
+	}
+	return {status_code: 0, return_value: projects};
+}
+
+
+/*
+ * Validates if a row in the storage is valid using a regexp
+ */
+PersistenceLayer.prototype.is_valid_project = function(project) {
+
+	return 1;
+}
+
+/*
+ * Delete everything
+ */
+PersistenceLayer.prototype.clear_projects = function() {
+
+	if (this.use_local_storage) {
+	
+	} else {
+		var keys = GM_listValues();
+		for (var i=0, key=null; key=keys[i]; i++) {
+			GM_deleteValue(key);
+		}
+	}
+
+	return {status_code: 0}
+}
+
+
+
+// =====================================================================
 // TimeTracker class
 
 function TimeTracker() {
 
-	var project_list;
-	var time_tracker_obj = this;
+	this.error_msgs = [];
+	this.success_msgs = [];
 
 	// Load all the saved projects
 	this.reload_projects();
-
-	// Create HTML
 	this.render_container();
+	this.register_event_handlers();
+	
+	console.log("Initialised TimeTracker");
 
+}
+
+TimeTracker.prototype.get_project = function(project_id) {
+	
 }
 
 // Return the next available key to store a project
@@ -117,25 +205,25 @@ TimeTracker.prototype.get_new_project_serial = function () {
 
 	// We need to check whether other projects
 	// have been added in another instance
-	var num_projects = Number(get_value("num_projects"));
+	var next_serial = Number(persistence_layer.get_value("next_serial"));
 
-	return num_projects;
+	return next_serial;
 }
 
 // Delete all the projects and clear the DOM
 // TODO:  Replace with project.delete();
 TimeTracker.prototype.clear_projects = function () {
 
-	if (use_local_storage) {
-		localStorage.clear();
-	} else {
-		var keys = GM_listValues();
-		for (var i = 0; i < keys.length; i++) {
-			console.log("Deleting: " + keys[i]);
-			GM_deleteValue(keys[i]);
-		}
-	}
+	var status_value = persistence_layer.clear_projects();
+	this.reload_projects();
 
+	// Check the status of the call to persistence layer
+	if (status_value[0] == 0) {
+		// This was successful
+		return {status_value: 0, status_msg: "CLEAR_PROJECTS_SUCCESS"};
+	} else { 
+		return {status_value: 1, status_msg: "CLEAR_PROJECTS_FAIL"};
+	}
 }
 
 // Initialises an empty date in this time_tracker
@@ -170,12 +258,25 @@ TimeTracker.prototype.add_new_project = function (project_name) {
 
 	// Update TimeTracker global state
 	project.save();
-	var num_projects = Number(get_value("num_projects"));
-	num_projects += 1;
-	set_value("num_projects", num_projects);
+	var next_serial = Number(persistence_layer.get_value("next_serial"));
+	next_serial += 1;
+	persistence_layer.set_value("next_serial", next_serial);
 
 	// Need to rebuild the model here
 	this.reload_projects();
+}
+
+/*
+ *
+ */
+TimeTracker.prototype.delete_project = function(project_id) {
+
+	var project = this.get_project(project_id);
+
+	project.remove();
+
+	this.reload_projects();
+
 }
 
 /* 
@@ -189,21 +290,21 @@ TimeTracker.prototype.reload_projects = function () {
 	this.projects = {};
 
 	// Read the number of projects.  TODO: Replace as this is not normalised
-	var num_projects = Number(get_value("num_projects"));
-	if (num_projects == "undefined" || isNaN(num_projects)) {
-		this.num_projects = 0;
-		set_value("num_projects", 0);
+	var next_serial = Number(persistence_layer.get_value("next_serial"));
+	if (next_serial == "undefined" || isNaN(next_serial)) {
+		this.next_serial = 0;
+		persistence_layer.set_value("next_serial", 0);
 	} else {
-		this.num_projects = num_projects;
+		this.next_serial = next_serial;
 	}
-	console.log("Number of projects to retrieve: " + num_projects);
+	console.log("Number of projects to retrieve: " + next_serial);
 
 	// Add the existing projects to the time tracker
-	for (var i = 0; i < this.num_projects; i++) {
+	for (var i = 0; i < this.next_serial; i++) {
 		var id = i;
-		var name = get_value("project_name_" + i);
-		var time = Number(get_value("project_time_" + i));
-		var date = get_value("project_date_" + i);
+		var name = persistence_layer.get_value("project_name_" + i);
+		var time = Number(persistence_layer.get_value("project_time_" + i));
+		var date = persistence_layer.get_value("project_date_" + i);
 
 		// Init this date if not seen before
 		if (!this['dates'][date]) {
@@ -220,6 +321,14 @@ TimeTracker.prototype.reload_projects = function () {
 	}
 }
 
+/*
+ * Retrieve all projects for this time tracker
+ */
+TimeTracker.prototype.get_projects = function() {
+
+	var projects = persistence_layer.get_projects();
+}
+
 
 // Check if the DB has been updated.
 // TODO:  Currently always reloads.
@@ -231,7 +340,10 @@ TimeTracker.prototype.is_reload_required = function () {
 	return reload;
 }
 
-
+TimeTracker.prototype.clear_msgs = function() {
+	this.error_msgs = [];
+	this.success_msgs = [];
+}
 
 
 // ================================== DOM Functions ===============================
@@ -255,6 +367,11 @@ TimeTracker.prototype.render = function () {
 	var tracker_html = this.get_tracker_html();
 	$('#time_tracker').append(tracker_html);
 
+	// Add message animations
+	$(".msg" ).fadeOut( 4000, function() {
+		// Animation complete.
+	});
+
 }
 
 // TODO: Convert to jQuery
@@ -266,6 +383,11 @@ TimeTracker.prototype.get_tracker_html = function () {
 	console.log("Rendering");
 	var html = '';
 	html += '   <div id="centre_container">';
+	
+	html += '      <div id="msgs">';
+	html += this.get_msgs_html();
+	html += '      </div>';
+
 	html += '      <div id="projects">';
 
 	// Render project_list
@@ -301,7 +423,6 @@ TimeTracker.prototype.render_container = function () {
 // It'll only be expanded if it matches today's date
 TimeTracker.prototype.get_project_list_html = function () {
 
-
 	var html = '';
 	// For each date, generate list of projects
 	for (date in this.dates) {
@@ -315,7 +436,6 @@ TimeTracker.prototype.get_project_list_html = function () {
 		var today = new Date();
 		var today = today.getDate() + "_" + today.getMonth() + "_" + today.getFullYear();
 
-
 		if (this.dates[date].displayed == 1) {
 			html += '   <div id="projects_' + date + '" class="projects" data-date="' + date + '">';
 		} else {
@@ -327,13 +447,30 @@ TimeTracker.prototype.get_project_list_html = function () {
 		for (var i = 0; i < project_list.length; i++) {
 			html += project_list[i].get_html();
 		}
-
 		html += '   </div>';
 		html += '</div>';
 	}
+	return html;
+}
+
+
+TimeTracker.prototype.get_msgs_html = function() {
+	
+	var html = '';
+	for (var i = 0; i < this.success_msgs.length; i++) {
+		var msg = this.success_msgs[i];
+
+		html += '<div class="msg success">' + msg + '</div>';
+	}
+	
+	for (var i = 0; i < this.error_msgs.length; i++) {
+		var msg = this.error_msgs[i];
+
+		html += '<div class="msg error">' + msg + '</div>';
+	}
+
 
 	return html;
-
 }
 
 
@@ -417,31 +554,45 @@ Project.prototype.decrement_time = function () {
 	this.save();
 }
 
+/*
+ * Attempt to write a project to storage.  Return an error if any of the values
+ * already exist
+ */
 Project.prototype.save = function () {
+
+	// Check that none of these already exist
+
 	// Save project name
 	var GM_project_name = 'project_name_' + this.id;
-	set_value(GM_project_name, this.name);
+	persistence_layer.set_value(GM_project_name, this.name);
 
 	// Save project time
 	var GM_project_time = 'project_time_' + this.id;
-	set_value(GM_project_time, this.time);
+	persistence_layer.set_value(GM_project_time, this.time);
 
 	// Save project date
 	var GM_project_date = 'project_date_' + this.id;
-	set_value(GM_project_date, this.date);
+	persistence_layer.set_value(GM_project_date, this.date);
 
 	console.log("Saving project: " + this.id + "," + this.name + "," + this.date + "," + this.time);
 }
 
 Project.prototype.read = function () {
 	var id = this.id;
-	this.name = get_value("project_name_" + id);
-	this.time = Number(get_value("project_time_" + id));
-	this.date = get_value("project_date_" + id);
+	this.name = persistence_layer.get_value("project_name_" + id);
+	this.time = Number(persistence_layer.get_value("project_time_" + id));
+	this.date = persistence_layer.get_value("project_date_" + id);
 
 }
 
-Project.prototype.delete = function () {}
+Project.prototype.remove = function () {
+	var project_id = this.id;
+
+	// Clear the storage
+	persistence_layer.delete_value('project_name_' + project_id);
+	persistence_layer.delete_value('project_time_' + project_id);	
+	persistence_layer.delete_value('project_date_' + project_id);	
+}
 
 
 // ======================== Project VIEW ====================================
@@ -456,6 +607,7 @@ Project.prototype.get_html = function () {
 	html += '<span class="time">' + this.time + '</span>';
 	html += '<button class="add_time" data-project_id="' + this.id + '">+</button>';
 	html += '<button class="subtract_time" data-project_id="' + this.id + '">-</button>';
+	html += '<a href="#" class="remove_project" data-project_id="' + this.id + '">Delete</button>';
 	html += '</div>';
 
 	return html;
@@ -541,50 +693,55 @@ TimeTracker.prototype.handle_add_project = function (project_name) {
 /*
  *
  */
+TimeTracker.prototype.handle_delete_project = function (project_id) {
+	this.delete_project();
+
+	this.render();
+}
+
+
+/*
+ *
+ */
 TimeTracker.prototype.handle_clear_projects = function () {
 
-	this.clear_projects();
+	var return_status = this.clear_projects();
+
+	if (return_status[0] == 0) {
+		this.success_msgs.push("Cleared projects");
+		console.log("Cleared projects");
+	} else {
+		this.error_msgs.push("Failed to clear projects");
+		console.log("Failed to clear projects");
+	}
 
 	// Reload model and re-render
 	this.reload_projects();
 	this.render();
+
+	// Remove the messages for this request
+	this.clear_msgs();
 }
 
 // ================================= Main Program Body ==================================
 
 $(document).ready(function () {
 
-	use_local_storage = 0;
 	create_stylesheet();
+
+	var use_local_storage = 0;
+	persistence_layer = new PersistenceLayer(use_local_storage);
+
 	document.time_tracker = new TimeTracker();
 
-	// Register events
-	document.time_tracker.register_event_handlers();
+	test_time_tracker();
 
 });
 
 function test_time_tracker() {
 
 
-	set_value('num_projects', 5);
-	set_value('project_name_0', 'Project 1');
-	set_value('project_time_0', 0);
-	set_value('project_date_0', '16_10_2013');
-
-	set_value('project_name_1', 'Project 2');
-	set_value('project_time_1', 0);
-	set_value('project_date_1', '16_10_2013');
-
-	set_value('project_name_2', 'Project 3');
-	set_value('project_time_2', 0);
-	set_value('project_date_2', '17_10_2013');
-
-	set_value('project_name_3', 'Project 4');
-	set_value('project_time_3', 0);
-	set_value('project_date_3', '18_10_2013');
-
-	set_value('project_name_4', 'Project 5');
-	set_value('project_time_4', 0);
-	set_value('project_date_4', '20_10_2013');
+	persistence_layer.set_value('tt|next_serial', 1);
+	persistence_layer.set_value('tt|project|0', 'Project 1|16_10_2013|0.75');
 
 }
