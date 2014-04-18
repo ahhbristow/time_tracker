@@ -43,6 +43,7 @@ function create_stylesheet() {
 	add_global_style('#time_tracker .project .name {width: 200px; display: block; float: left; color: #ddd}');
 	add_global_style('#time_tracker .project .time {width: 50px; display: block; float: left; color: #ddd}');
 	add_global_style('#time_tracker .project button {float: left; margin: 0px; width: 30px; height; 30px; padding: 0px}');
+	add_global_style('#time_tracker .project button.remove_project {background: none; border: none;}');
 	
 	
 	add_global_style('#time_tracker #msgs .msg {padding: 10px; border: 1px solid; border-radius: 5px; color: white}');
@@ -67,7 +68,7 @@ function dump_storage() {
 	//console.log(val + ", " + text);
 	//}
 
-	console.log(values);
+	//console.log(values);
 }
 
 
@@ -156,6 +157,32 @@ PersistenceLayer.prototype.get_projects = function() {
 	return {status_code: 0, return_value: projects};
 }
 
+/*
+ *
+ */
+PersistenceLayer.prototype.insert_project = function(project) {
+	// Get a serial for it
+	var id = this.get_next_project_serial();
+
+	// Create the storage string
+	var key   = "tt|project|" + id;
+	var value = project.name + "|" + project.date + "|" + project.time;
+
+	// TODO: Check it doesn't already exist
+	this.set_value(key,value);
+
+	console.log("PL: Inserting (" + key + "," + value + ")");
+}
+
+/*
+ *
+ */
+PersistenceLayer.prototype.remove_project = function(project_id) {
+	var key = "tt|project|" + project_id;
+	
+	// TODO: Catch any errors here
+	GM_deleteValue(key);
+}
 
 /*
  * Validates if a row in the storage is valid using a regexp
@@ -182,6 +209,28 @@ PersistenceLayer.prototype.clear_projects = function() {
 	return {status_code: 0}
 }
 
+/*
+ * Checks the existing projects and gets the next serial
+ */
+PersistenceLayer.prototype.get_next_project_serial = function() {
+	var projects = this.get_projects()['return_value'];
+
+	// Iterate over the projects and find the max ID
+	// TODO:  Slightly inefficient.  Looping twice effectively
+	
+	var max_serial = 1;
+	console.log("PL: Projects: " + projects.length);
+	for (var i = 0; i < projects.length; i++) {
+		var project = projects[i];
+
+		console.log("PL: Project ID: " + project.id);
+		if (project.id >= max_serial) {
+			max_serial = parseInt(project.id) + 1;
+		}
+	}
+	console.log("PL: Next serial: " + max_serial);
+	return max_serial;
+}
 
 
 // =====================================================================
@@ -201,18 +250,22 @@ function TimeTracker() {
 
 }
 
+/*
+ * Return a particular project from the list of projects
+ */
 TimeTracker.prototype.get_project = function(project_id) {
-	
-}
+		
+	for (date in this.dates) {
+		// List of projects on this date
+		var project_list = this.dates[date].projects;
+		for (var i = 0; i < project_list.length; i++) {
 
-// Return the next available key to store a project
-TimeTracker.prototype.get_new_project_serial = function () {
-
-	// We need to check whether other projects
-	// have been added in another instance
-	var next_serial = Number(persistence_layer.get_value("next_serial"));
-
-	return next_serial;
+			var project = project_list[i];
+			if (project.id == project_id) {
+				return project;
+			}
+		}
+	}
 }
 
 // Delete all the projects and clear the DOM
@@ -256,17 +309,13 @@ TimeTracker.prototype.add_new_project = function (project_name) {
 	console.log("Adding project: " + project_name);
 
 	// Create the new project object
-	var id = this.get_new_project_serial();
 	var time = 0;
 	var date = new Date();
 	date = date.getDate() + "_" + date.getMonth() + "_" + date.getFullYear();
-	var project = new Project(id, project_name, time, date);
+	var project = new Project("", project_name, time, date);
 
 	// Update TimeTracker global state
-	project.save();
-	var next_serial = Number(persistence_layer.get_value("next_serial"));
-	next_serial += 1;
-	persistence_layer.set_value("next_serial", next_serial);
+	project.insert();
 
 	// Need to rebuild the model here
 	this.reload_projects();
@@ -551,6 +600,13 @@ TimeTracker.prototype.register_event_handlers = function () {
 		var project_name = $("#new_project_name").val();
 		time_tracker.handle_add_project(project_name);
 	});
+	
+	// Remove project
+	$(document).on('click', '.remove_project', function () {
+		var project_id = $(this).attr('data-project_id');
+		console.log("Remove project: " + project_id);
+		time_tracker.handle_delete_project(project_id);
+	});
 
 	// Remove all projects from the TimeTracker
 	$(document).on('click', '#clear_projects', function () {
@@ -617,7 +673,14 @@ Project.prototype.save = function () {
 	var GM_project_date = 'project_date_' + this.id;
 	persistence_layer.set_value(GM_project_date, this.date);
 
+
+	persistence_layer.write_project();
 	console.log("Saving project: " + this.id + "," + this.name + "," + this.date + "," + this.time);
+}
+
+Project.prototype.insert = function () {
+	persistence_layer.insert_project(this);
+	
 }
 
 Project.prototype.read = function () {
@@ -631,10 +694,7 @@ Project.prototype.read = function () {
 Project.prototype.remove = function () {
 	var project_id = this.id;
 
-	// Clear the storage
-	persistence_layer.delete_value('project_name_' + project_id);
-	persistence_layer.delete_value('project_time_' + project_id);	
-	persistence_layer.delete_value('project_date_' + project_id);	
+	persistence_layer.remove_project(project_id);
 }
 
 
@@ -650,7 +710,7 @@ Project.prototype.get_html = function () {
 	html += '<span class="time">' + this.time + '</span>';
 	html += '<button class="add_time" data-project_id="' + this.id + '">+</button>';
 	html += '<button class="subtract_time" data-project_id="' + this.id + '">-</button>';
-	html += '<a href="#" class="remove_project" data-project_id="' + this.id + '">Delete</button>';
+	html += '<button class="remove_project" data-project_id="' + this.id + '">Delete</button>';
 	html += '</div>';
 
 	return html;
@@ -744,8 +804,7 @@ TimeTracker.prototype.handle_add_project = function (project_name) {
  *
  */
 TimeTracker.prototype.handle_delete_project = function (project_id) {
-	this.delete_project();
-
+	this.delete_project(project_id);
 	this.render();
 }
 
@@ -784,7 +843,8 @@ $(document).ready(function () {
 
 	document.time_tracker = new TimeTracker();
 
-	test_time_tracker();
+	//test_time_tracker();
+	dump_storage();
 
 });
 
