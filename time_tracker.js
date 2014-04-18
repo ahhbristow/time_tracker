@@ -175,6 +175,18 @@ PersistenceLayer.prototype.insert_project = function(project) {
 }
 
 /*
+ * TODO:  Add success/fail return
+ */
+PersistenceLayer.prototype.update_project = function(project) {
+	
+	// Just create a new value and write it
+	var key   = "tt|project|" + project.id;
+	var value = project.name + "|" + project.date + "|" + project.time;
+	this.set_value(key,value);
+	
+}
+
+/*
  *
  */
 PersistenceLayer.prototype.remove_project = function(project_id) {
@@ -336,48 +348,6 @@ TimeTracker.prototype.delete_project = function(project_id) {
 
 }
 
-/* 
- *  Rebuilds the model by retrieving all the projects from local storage
- */
-TimeTracker.prototype.reload_projects_old = function () {
-
-	// Clear this TimeTracker's
-	// list of projects
-	this.dates = {};
-	this.projects = {};
-
-	// Read the number of projects.  TODO: Replace as this is not normalised
-	var next_serial = Number(persistence_layer.get_value("next_serial"));
-	if (next_serial == "undefined" || isNaN(next_serial)) {
-		this.next_serial = 0;
-		persistence_layer.set_value("next_serial", 0);
-	} else {
-		this.next_serial = next_serial;
-	}
-	console.log("Number of projects to retrieve: " + next_serial);
-
-	// Add the existing projects to the time tracker
-	for (var i = 0; i < this.next_serial; i++) {
-		var id = i;
-		var name = persistence_layer.get_value("project_name_" + i);
-		var time = Number(persistence_layer.get_value("project_time_" + i));
-		var date = persistence_layer.get_value("project_date_" + i);
-
-		// Init this date if not seen before
-		if (!this['dates'][date]) {
-			this.init_date(date);
-		}
-
-		var project = new Project(id, name, time, date);
-		console.log("Retrieving project: (" + id + ", " + name + ", " + date + ", " + time + ")");
-
-		// Push project to both dates array and projects array.
-		// Convenient for later
-		this.dates[date].projects.push(project);
-		this.projects[id] = project;
-	}
-}
-
 TimeTracker.prototype.get_projects = function() {
 
 	// Retrieve a list of projects from storage
@@ -394,7 +364,7 @@ TimeTracker.prototype.get_projects = function() {
 		var row = rows[row_idx];
 		var id   = row['id'];
 		var name = row['name'];
-		var time = row['time'];
+		var time = parseFloat(row['time']);
 		var date = row['date'];
 		var project = new Project(id,name,time,date);
 		console.log("Adding project: " + project);
@@ -645,37 +615,20 @@ Project.prototype.get_name = function () {}
 
 Project.prototype.increment_time = function () {
 	this.time += 0.25;
-	this.save();
+	this.update();
 }
 
 Project.prototype.decrement_time = function () {
 	this.time -= 0.25;
-	this.save();
+	this.update();
 }
 
 /*
  * Attempt to write a project to storage.  Return an error if any of the values
  * already exist
  */
-Project.prototype.save = function () {
-
-	// Check that none of these already exist
-
-	// Save project name
-	var GM_project_name = 'project_name_' + this.id;
-	persistence_layer.set_value(GM_project_name, this.name);
-
-	// Save project time
-	var GM_project_time = 'project_time_' + this.id;
-	persistence_layer.set_value(GM_project_time, this.time);
-
-	// Save project date
-	var GM_project_date = 'project_date_' + this.id;
-	persistence_layer.set_value(GM_project_date, this.date);
-
-
-	persistence_layer.write_project();
-	console.log("Saving project: " + this.id + "," + this.name + "," + this.date + "," + this.time);
+Project.prototype.update = function () {
+	persistence_layer.update_project(this);
 }
 
 Project.prototype.insert = function () {
@@ -732,11 +685,10 @@ TimeTracker.prototype.handle_increment_time = function (project_id) {
 	console.log("handle_increment_time: " + project_id);
 
 	// Read the project
-	var project = this.projects[project_id];
+	var project = this.get_project(project_id);
 
 	// Update the model
 	project.increment_time();
-	project.save();
 
 	// Re-render the TimeTracker
 	this.render();
@@ -748,11 +700,10 @@ TimeTracker.prototype.handle_increment_time = function (project_id) {
 TimeTracker.prototype.handle_decrement_time = function (project_id) {
 
 	// Read the project
-	var project = this.projects[project_id];
+	var project = this.get_project(project_id);
 
 	// Update the model
 	project.decrement_time();
-	project.save();
 
 	// Re-render the TimeTracker
 	this.render();
