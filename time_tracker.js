@@ -41,13 +41,15 @@ function create_stylesheet() {
 
 
 	add_global_style('#time_tracker .project {padding: 8px; font-size: 14px; line-height: 1.5em; border-bottom: 2px solid #aaa}');
+	add_global_style('#time_tracker .project:hover {background-color: lightsalmon}');
 	add_global_style('#time_tracker .project .name {width: 200px; display: block; float: left;}');
 	add_global_style('#time_tracker .project .time {width: 50px; display: block; float: left; text-align: center;}');
 	add_global_style('#time_tracker .project button {float: left; margin: 0px; width: 30px; height; 30px; padding: 0px}');
 	add_global_style('#time_tracker .project button.time_button {color: white; font-weight: bolder; padding: 5px; background-color: cornflowerblue; border: none; outline: none;}');
 	add_global_style('#time_tracker .project button.time_button.subtract_time {border-radius: 0px 5px 5px 0px;}');
 	add_global_style('#time_tracker .project button.time_button.add_time {border-radius: 5px 0px 0px 5px;}');
-	add_global_style('#time_tracker .project button.remove_project {background: none; border: none;}');
+	add_global_style('#time_tracker .project button.remove_project {outline: none; float: right; background-image: url("http://img4.wikia.nocookie.net/__cb20130213200639/destiny2579/images/b/b1/Delete_Icon.png"); background-size: 30px 30px;background-repeat: no-repeat;background-position: center left; color: yellowgreen;font-weight: bold; border: none; width: 30px; height: 30px; background-color: inherit;}');
+	add_global_style('#time_tracker .project button.remove_project span {display: none;}');
 	add_global_style('#time_tracker .project .project_controls {float: left; border-radius: 5px; background-color: white;}');
 	
 	
@@ -690,7 +692,6 @@ Project.prototype.get_html = function () {
 
 	var html = '';
 	html += '<div class="project clearfix">';
-	html += '<button class="remove_project" data-project_id="' + this.id + '">Delete</button>';
 	html += '<span class="name">' + this.name + '</span>';
 
 	html += '<div class="project_controls">';
@@ -698,6 +699,7 @@ Project.prototype.get_html = function () {
 	html += '<span class="time">' + this.time + '</span>';
 	html += '<button class="time_button subtract_time" data-project_id="' + this.id + '">-</button>';
 	html += '</div>';
+	html += '<button class="remove_project" data-project_id="' + this.id + '"><span>Delete</span></button>';
 	html += '</div>';
 
 	return html;
