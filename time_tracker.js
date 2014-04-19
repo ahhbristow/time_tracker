@@ -35,13 +35,14 @@ function create_stylesheet() {
 	add_global_style('.hidden {display: none}');
 
 
-	add_global_style('#time_tracker .projects_date {padding: 5px; background-color: #ccc; color: black;}');
-	add_global_style('#time_tracker .projects_date_container {margin-bottom: 20px}');
+	add_global_style('#time_tracker .projects_date {padding: 5px;}');
+	add_global_style('#time_tracker .projects_date_container {margin-bottom: 20px; color: black; border-radius: 20px; padding: 10px; background-color: #ccc;}');
+	add_global_style('#time_tracker .projects_date_container h3 {margin: 0px; padding: 0px;}');
 
 
-	add_global_style('#time_tracker .project {color: #ddd; margin-top: 5px; font-size: 14px; line-height: 1.5em}');
-	add_global_style('#time_tracker .project .name {width: 200px; display: block; float: left; color: #ddd}');
-	add_global_style('#time_tracker .project .time {width: 50px; display: block; float: left; color: #ddd}');
+	add_global_style('#time_tracker .project {margin-top: 5px; font-size: 14px; line-height: 1.5em}');
+	add_global_style('#time_tracker .project .name {width: 200px; display: block; float: left;}');
+	add_global_style('#time_tracker .project .time {width: 50px; display: block; float: left;}');
 	add_global_style('#time_tracker .project button {float: left; margin: 0px; width: 30px; height; 30px; padding: 0px}');
 	add_global_style('#time_tracker .project button.remove_project {background: none; border: none;}');
 	
@@ -115,6 +116,7 @@ PersistenceLayer.prototype.delete_value = function(key) {
 PersistenceLayer.prototype.get_projects = function() {
 
 	var keys = GM_listValues();
+	console.log("KEYS: " + keys);
 	var projects = [];
 	for (var i = 0; i < keys.length; i++) {
 
@@ -425,14 +427,19 @@ TimeTracker.prototype.add_project_DOM = function (project, date) {
 // Redraw just the centre container
 TimeTracker.prototype.render = function () {
 
-	$('#centre_container').remove();
-	var tracker_html = this.get_tracker_html();
-	$('#time_tracker').append(tracker_html);
+	// Re-render the project list
+	$('#projects').html('');
+	var project_list_html = this.get_project_list_html();
+	$('#projects').append(project_list_html);
+
+
+	// Do we have any messages to display?
+	$('#msgs').append(this.get_msgs_html());
 
 	// Add message animations
-	//$(".msg" ).fadeOut( 4000, function() {
+	$(".msg" ).fadeOut( 4000, function() {
 		// Animation complete.
-	//});
+	});
 
 }
 
@@ -450,12 +457,12 @@ TimeTracker.prototype.get_tracker_html = function () {
 	html += this.get_msgs_html();
 	html += '      </div>';
 
-	html += '      <div id="projects">';
 
 	// Render project_list
+	html += '<div id="projects">';
 	html += this.get_project_list_html();
+	html += '</div>';
 
-	html += '      </div>';
 	html += '      <div id="time_tracker_controls">';
 	html += '         <input id="new_project_name" value="" />';
 	html += '         <button id="add_project">Add Project</button>';
