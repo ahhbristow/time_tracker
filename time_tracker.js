@@ -40,11 +40,15 @@ function create_stylesheet() {
 	add_global_style('#time_tracker .projects_date_container h3 {margin: 0px; padding: 0px;}');
 
 
-	add_global_style('#time_tracker .project {margin-top: 5px; font-size: 14px; line-height: 1.5em}');
+	add_global_style('#time_tracker .project {padding: 8px; font-size: 14px; line-height: 1.5em; border-bottom: 2px solid #aaa}');
 	add_global_style('#time_tracker .project .name {width: 200px; display: block; float: left;}');
-	add_global_style('#time_tracker .project .time {width: 50px; display: block; float: left;}');
+	add_global_style('#time_tracker .project .time {width: 50px; display: block; float: left; text-align: center;}');
 	add_global_style('#time_tracker .project button {float: left; margin: 0px; width: 30px; height; 30px; padding: 0px}');
+	add_global_style('#time_tracker .project button.time_button {color: white; font-weight: bolder; padding: 5px; background-color: cornflowerblue; border: none; outline: none;}');
+	add_global_style('#time_tracker .project button.time_button.subtract_time {border-radius: 0px 5px 5px 0px;}');
+	add_global_style('#time_tracker .project button.time_button.add_time {border-radius: 5px 0px 0px 5px;}');
 	add_global_style('#time_tracker .project button.remove_project {background: none; border: none;}');
+	add_global_style('#time_tracker .project .project_controls {float: left; border-radius: 5px; background-color: white;}');
 	
 	
 	//add_global_style('#time_tracker #msgs .msg {padding: 10px; border: 1px solid; border-radius: 5px; color: white}');
@@ -458,8 +462,8 @@ TimeTracker.prototype.render = function () {
 	//});
 
 	setTimeout(function() {
-		$(".msg").fadeOut(1000, function() {});
-	},1000);
+		$(".msg").fadeOut(500, function() {});
+	},200);
 
 }
 
@@ -686,11 +690,14 @@ Project.prototype.get_html = function () {
 
 	var html = '';
 	html += '<div class="project clearfix">';
-	html += '<span class="name">' + this.name + '</span>';
-	html += '<span class="time">' + this.time + '</span>';
-	html += '<button class="add_time" data-project_id="' + this.id + '">+</button>';
-	html += '<button class="subtract_time" data-project_id="' + this.id + '">-</button>';
 	html += '<button class="remove_project" data-project_id="' + this.id + '">Delete</button>';
+	html += '<span class="name">' + this.name + '</span>';
+
+	html += '<div class="project_controls">';
+	html += '<button class="time_button add_time" data-project_id="' + this.id + '">+</button>';
+	html += '<span class="time">' + this.time + '</span>';
+	html += '<button class="time_button subtract_time" data-project_id="' + this.id + '">-</button>';
+	html += '</div>';
 	html += '</div>';
 
 	return html;
@@ -751,8 +758,10 @@ TimeTracker.prototype.handle_date_expand = function (date) {
 		tracker_date.displayed = 1;
 	}
 
+	$('#projects_' + date).slideToggle(200);
+
 	// Re-render everything
-	this.render();
+	//this.render();
 }
 
 /*
