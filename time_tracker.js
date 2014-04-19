@@ -28,11 +28,11 @@ function add_global_style(css) {
 function create_stylesheet() {
 	add_global_style('#time_tracker { position: fixed; left: 0px; top: 0px; width: 100%; height: 100%; background-color: rgba(100,100,100,0.8); display: none; z-index: 10000; !important}');
 	add_global_style('#time_tracker_expand { position: fixed; top: 0px; right: 0px; z-index: 10001 }');
-	add_global_style('#centre_container { width: 600px; padding: 30px; margin: 0px auto; border: 0px solid #ccc; border-radius: 40px; background-color: rgba(70,70,70,1.0) }');
-	add_global_style('#new_project_name {clear: left;}');
+	add_global_style('#time_tracker #centre_container { width: 600px; padding: 30px; margin: 0px auto; border: 0px solid #ccc; border-radius: 40px; background-color: rgba(70,70,70,1.0) }');
+	add_global_style('#time_tracker #new_project_name {clear: left;}');
 	add_global_style('#time_tracker_controls {clear: both;}');
 	add_global_style("#time_tracker {font-family: Ubuntu,Arial,'libra sans',sans-serif");
-	add_global_style('.hidden {display: none}');
+	add_global_style('#time_tracker .hidden {display: none}');
 
 
 	add_global_style('#time_tracker .projects_date {padding: 5px;}');
@@ -47,9 +47,25 @@ function create_stylesheet() {
 	add_global_style('#time_tracker .project button.remove_project {background: none; border: none;}');
 	
 	
-	add_global_style('#time_tracker #msgs .msg {padding: 10px; border: 1px solid; border-radius: 5px; color: white}');
-	add_global_style('#time_tracker #msgs .msg.success {background-color: #FEEFB3; color: #9F6000;}');
-	add_global_style('#time_tracker #msgs .msg.error {color: #D8000C; background-color: #FFBABA;}');
+	//add_global_style('#time_tracker #msgs .msg {padding: 10px; border: 1px solid; border-radius: 5px; color: white}');
+	//add_global_style('#time_tracker #msgs .msg.success {background-color: #FEEFB3; color: #9F6000;}');
+	//add_global_style('#time_tracker #msgs .msg.error {color: #D8000C; background-color: #FFBABA;}');
+
+	
+	add_global_style('#time_tracker #time_tracker_controls {position: relative;}');
+
+	// Style the new project input box
+	add_global_style('#time_tracker #new_project_name {border: none; border-radius: 10px; outline: none; font-size: 20px; padding: 10px; background-color: beige;}');
+
+	// Style speech bubble
+	add_global_style('#time_tracker .msg {position: absolute; top:-120px; left: 300px;padding: 15px;background: #FFCE48;-webkit-border-radius: 27px;-moz-border-radius: 27px;border-radius: 27px;}');
+	add_global_style('#time_tracker .msg.success {border: solid 7px #6ACE7F}');
+	add_global_style('#time_tracker .msg.error {border: solid 7px red;}');
+	add_global_style('#time_tracker .msg:after {content: "";position: absolute;border-style: solid;border-width: 22px 8px 0;border-color: #FFCE48 transparent;display: block;width: 0;z-index: 1;margin-left: -8px;bottom: -22px;left: 20%;}');
+	add_global_style('#time_tracker .msg:before {content: "";position: absolute;border-style: solid;border-width: 28px 14px 0;border-color: #6ACE7F transparent;display: block;width: 0;z-index: 0;margin-left: -14px;bottom: -35px;left: 20%;}');
+
+
+	add_global_style('#time_tracker .msg span {display: block; background-image: url("http://icons.iconarchive.com/icons/gakuseisean/ivista-2/256/Alarm-Tick-icon.png"); padding: 20px 20px 20px 40px; background-size: 30px 30px;background-repeat: no-repeat;background-position: center left; color: yellowgreen;font-weight: bold;}');
 
 
 	add_global_style('.clearfix:after {content: "."; display: block; clear: both; visibility: hidden; line-height: 0; height: 0;');
@@ -434,12 +450,16 @@ TimeTracker.prototype.render = function () {
 
 
 	// Do we have any messages to display?
-	$('#msgs').append(this.get_msgs_html());
+	$('#time_tracker_controls').append(this.get_msgs_html());
 
 	// Add message animations
-	$(".msg" ).fadeOut( 4000, function() {
+	//$(".msg" ).fadeOut( 4000, function() {
 		// Animation complete.
-	});
+	//});
+
+	setTimeout(function() {
+		$(".msg").fadeOut(1000, function() {});
+	},1000);
 
 }
 
@@ -529,7 +549,7 @@ TimeTracker.prototype.get_msgs_html = function() {
 	for (var i = 0; i < this.success_msgs.length; i++) {
 		var msg = this.success_msgs[i];
 
-		html += '<div class="msg success">' + msg + '</div>';
+		html += '<div class="msg success"><span>' + msg + '</span></div>';
 	}
 	
 	for (var i = 0; i < this.error_msgs.length; i++) {
@@ -748,9 +768,9 @@ TimeTracker.prototype.handle_add_project = function (project_name) {
 		// Retrieve the values and create new project in model
 		var ret = this.add_new_project(project_name);
 		if (ret['status_value'] == 0) {
-			this.success_msgs.push("SUCCESS_ADD_PROJECT");
+			this.success_msgs.push("Project added!");
 		} else {
-			this.error_msgs.push("ERR_ADD_PROJECT");
+			this.error_msgs.push("Failed to add project");
 		}
 
 	}
