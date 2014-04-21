@@ -13,6 +13,15 @@ function format_date(date) {
 	return date.getDate() + "_" + date.getMonth() + "_" + date.getFullYear();
 }
 
+function print_date(date) {
+
+	var date_parts = date.split("_");
+	var date_obj = new Date(date_parts[2],date_parts[1],date_parts[0]);
+
+	var pretty_date = date_obj.toDateString();
+	return pretty_date;
+}
+
 function add_global_style(css) {
 	var head, style;
 	head = document.getElementsByTagName('head')[0];
@@ -33,11 +42,12 @@ function create_stylesheet() {
 	add_global_style('#time_tracker_controls {clear: both;}');
 	add_global_style("#time_tracker {font-family: Ubuntu,Arial,'libra sans',sans-serif");
 	add_global_style('#time_tracker .hidden {display: none}');
+	add_global_style('#time_tracker button {cursor:pointer}');
 
 
-	add_global_style('#time_tracker .projects_date {padding: 5px;}');
 	add_global_style('#time_tracker .projects_date_container {margin-bottom: 20px; color: black; border-radius: 20px; padding: 10px; background-color: #ccc;}');
-	add_global_style('#time_tracker .projects_date_container h3 {margin: 0px; padding: 0px;}');
+	add_global_style('#time_tracker .projects_date_container h3 {margin: 0px; padding:0px 0px 0px 30px; background: #ccc url("http://localhost/web/arrow.png") no-repeat center left; background-size: 1em 1em; cursor: pointer}');
+	add_global_style('#time_tracker .projects_date_container.expanded h3 {background: #ccc url("http://localhost/web/arrow_down.png") no-repeat center left; background-size: 1em 1em;}');
 
 
 	add_global_style('#time_tracker .project {padding: 8px; font-size: 14px; line-height: 1.5em; border-bottom: 2px solid #aaa}');
@@ -46,8 +56,8 @@ function create_stylesheet() {
 	add_global_style('#time_tracker .project .time {width: 50px; display: block; float: left; text-align: center;}');
 	add_global_style('#time_tracker .project button {float: left; margin: 0px; width: 30px; height; 30px; padding: 0px}');
 	add_global_style('#time_tracker .project button.time_button {color: white; font-weight: bolder; padding: 5px; background-color: cornflowerblue; border: none; outline: none;}');
-	add_global_style('#time_tracker .project button.time_button.subtract_time {border-radius: 0px 5px 5px 0px;}');
-	add_global_style('#time_tracker .project button.time_button.add_time {border-radius: 5px 0px 0px 5px;}');
+	add_global_style('#time_tracker .project button.time_button.subtract_time {border-radius: 5px 0px 0px 5px;}');
+	add_global_style('#time_tracker .project button.time_button.add_time {border-radius: 0px 5px 5px 0px;}');
 	add_global_style('#time_tracker .project button.remove_project {outline: none; float: right; background-image: url("http://img4.wikia.nocookie.net/__cb20130213200639/destiny2579/images/b/b1/Delete_Icon.png"); background-size: 30px 30px;background-repeat: no-repeat;background-position: center left; color: yellowgreen;font-weight: bold; border: none; width: 30px; height: 30px; background-color: inherit;}');
 	add_global_style('#time_tracker .project button.remove_project span {display: none;}');
 	add_global_style('#time_tracker .project .project_controls {float: left; border-radius: 5px; background-color: white;}');
@@ -62,6 +72,8 @@ function create_stylesheet() {
 
 	// Style the new project input box
 	add_global_style('#time_tracker #new_project_name {border: none; border-radius: 10px; outline: none; font-size: 20px; padding: 10px; background-color: beige;}');
+	add_global_style('#time_tracker #add_project {width:60px; height: 60px; border-radius:30px; background-color: yellowgreen; vertical-align: middle; border: none; color: yellowgreen;font-weight: bold;}');
+	add_global_style('#time_tracker #clear_projects {display: block; text-decoration: underline; color: peru; font-weight: bold; outline: none; background: none; border: none;}');
 
 	// Style speech bubble
 	add_global_style('#time_tracker .msg {position: absolute; top:-120px; left: 300px;padding: 15px;background: #FFCE48;-webkit-border-radius: 27px;-moz-border-radius: 27px;border-radius: 27px;}');
@@ -522,10 +534,14 @@ TimeTracker.prototype.get_project_list_html = function () {
 	// For each date, generate list of projects
 	for (date in this.dates) {
 
-		html += '<div class="projects_date_container">';
-		html += '   <h3 class="projects_date">';
-		html += '      <button class="expand_projects" data-date="' + date + '">+</button>';
-		html += '      <span>' + date + '</span>';
+		if (this.dates[date].displayed == 1) {
+			html += '<div id="projects_date_container_' + date + '" class="projects_date_container expanded">';
+		} else {
+			
+			html += '<div id="projects_date_container_' + date + '" class="projects_date_container">';
+		}
+		html += '   <h3 class="projects_date" data-date="' + date + '">';
+		html += '      <span>' + print_date(date) + '</span>';
 		html += '   </h3>';
 
 		var today = new Date();
@@ -593,7 +609,7 @@ TimeTracker.prototype.register_event_handlers = function () {
 	});
 
 	// Expand/collapse a particular date's project list
-	$(document).on('click', '.expand_projects', function () {
+	$(document).on('click', '.projects_date', function () {
 		var date = $(this).attr('data-date');
 		time_tracker.handle_date_expand(date);
 	});
@@ -695,9 +711,9 @@ Project.prototype.get_html = function () {
 	html += '<span class="name">' + this.name + '</span>';
 
 	html += '<div class="project_controls">';
-	html += '<button class="time_button add_time" data-project_id="' + this.id + '">+</button>';
-	html += '<span class="time">' + this.time + '</span>';
 	html += '<button class="time_button subtract_time" data-project_id="' + this.id + '">-</button>';
+	html += '<span class="time">' + this.time + '</span>';
+	html += '<button class="time_button add_time" data-project_id="' + this.id + '">+</button>';
 	html += '</div>';
 	html += '<button class="remove_project" data-project_id="' + this.id + '"><span>Delete</span></button>';
 	html += '</div>';
@@ -760,7 +776,11 @@ TimeTracker.prototype.handle_date_expand = function (date) {
 		tracker_date.displayed = 1;
 	}
 
-	$('#projects_' + date).slideToggle(200);
+	$('#projects_date_container_' + date).toggleClass('expanded');
+	$('#projects_' + date).slideToggle(200,null,{
+		start: function() {
+		}
+	});
 
 	// Re-render everything
 	//this.render();
@@ -832,14 +852,19 @@ $(document).ready(function () {
 
 	document.time_tracker = new TimeTracker();
 
-	//test_time_tracker();
+	test_time_tracker();
 	dump_storage();
 
 });
 
 function test_time_tracker() {
 
-	persistence_layer.set_value('tt|next_serial', 1);
 	persistence_layer.set_value('tt|project|0', 'Project 1|16_10_2013|0.75');
+	persistence_layer.set_value('tt|project|1', 'Project 2|18_10_2013|0.75');
+	persistence_layer.set_value('tt|project|2', 'Project 3|16_10_2013|0.75');
+	persistence_layer.set_value('tt|project|3', 'Project 4|16_10_2013|0.75');
+	persistence_layer.set_value('tt|project|4', 'Project 5|17_10_2013|0.75');
+	persistence_layer.set_value('tt|project|5', 'Project 6|17_10_2013|0.75');
+	persistence_layer.set_value('tt|project|6', 'Project 7|17_10_2013|0.75');
 
 }
