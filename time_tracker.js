@@ -72,7 +72,8 @@ function create_stylesheet() {
 
 	// Style the new project input box
 	add_global_style('#time_tracker #new_project_name {border: none; border-radius: 10px; outline: none; font-size: 20px; padding: 10px; background-color: beige;}');
-	add_global_style('#time_tracker #add_project {width:60px; height: 60px; border-radius:30px; background-color: yellowgreen; vertical-align: middle; border: none; color: yellowgreen;font-weight: bold;}');
+	add_global_style('#time_tracker #add_project {outline: none; width:60px; height: 60px; border-radius:30px; background-color: yellowgreen; vertical-align: middle; border: none; color: white;font-weight: bold; font-size:50px}');
+	add_global_style('#time_tracker #add_project:active {background-color: green}');
 	add_global_style('#time_tracker #clear_projects {display: block; text-decoration: underline; color: peru; font-weight: bold; outline: none; background: none; border: none;}');
 
 	// Style speech bubble
@@ -256,13 +257,9 @@ PersistenceLayer.prototype.is_valid_project = function(project) {
  */
 PersistenceLayer.prototype.clear_projects = function() {
 
-	if (this.use_local_storage) {
-	
-	} else {
-		var keys = this.get_keys();
-		for (var i=0, key=null; key=keys[i]; i++) {
-			this.delete_value(key);
-		}
+	var keys = this.get_keys();
+	for (var i=0, key=null; key=keys[i]; i++) {
+		this.delete_value(key);
 	}
 
 	return {status_code: 0}
@@ -514,7 +511,7 @@ TimeTracker.prototype.get_tracker_html = function () {
 
 	html += '      <div id="time_tracker_controls">';
 	html += '         <input id="new_project_name" value="" />';
-	html += '         <button id="add_project">Add Project</button>';
+	html += '         <button id="add_project">+</button>';
 	html += '         <button id="clear_projects">Clear All</button>';
 	html += '      </div>';
 	html += '   </div>';
