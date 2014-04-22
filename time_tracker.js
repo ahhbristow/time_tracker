@@ -132,13 +132,24 @@ PersistenceLayer.prototype.get_value = function(key) {
 	return {status_value: 0, return_value: value};
 }
 
+PersistenceLayer.prototype.get_keys = function(key) {
+	if (this.use_local_storage) {
+		var keys = [];
+		for(var k in localStorage) keys.push(k);
+	} else {
+		var keys = GM_listValues();
+	}
+	return keys;
+}
+
+
 PersistenceLayer.prototype.delete_value = function(key) {
 	if (this.use_local_storage) {
 		localStorage.removeItem(key);
 	} else {
 		GM_deleteValue(key);
 	}
-	return {status_value: 0, return_value: value};
+	return {status_value: 0};
 }
 
 /*
@@ -149,7 +160,7 @@ PersistenceLayer.prototype.delete_value = function(key) {
  */
 PersistenceLayer.prototype.get_projects = function() {
 
-	var keys = GM_listValues();
+	var keys = this.get_keys();
 	console.log("KEYS: " + keys);
 	var projects = [];
 	for (var i = 0; i < keys.length; i++) {
@@ -162,7 +173,7 @@ PersistenceLayer.prototype.get_projects = function() {
 		// This is a project so we should retrive
 		if (key_parts[0] === "tt" && key_parts[1] === "project") {
 	
-			var project_data = GM_getValue(key);
+			var project_data = this.get_value(key)['return_value'];
 
 			// Parse the project data, pipe separated
 			var data_parts = project_data.split("|");
@@ -229,7 +240,7 @@ PersistenceLayer.prototype.remove_project = function(project_id) {
 	var key = "tt|project|" + project_id;
 	
 	// TODO: Catch any errors here
-	GM_deleteValue(key);
+	this.delete_value(key);
 }
 
 /*
@@ -248,9 +259,9 @@ PersistenceLayer.prototype.clear_projects = function() {
 	if (this.use_local_storage) {
 	
 	} else {
-		var keys = GM_listValues();
+		var keys = this.get_keys();
 		for (var i=0, key=null; key=keys[i]; i++) {
-			GM_deleteValue(key);
+			this.delete_value(key);
 		}
 	}
 
@@ -847,7 +858,7 @@ $(document).ready(function () {
 
 	create_stylesheet();
 
-	var use_local_storage = 0;
+	var use_local_storage = 1;
 	persistence_layer = new PersistenceLayer(use_local_storage);
 
 	document.time_tracker = new TimeTracker();
