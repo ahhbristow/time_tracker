@@ -860,7 +860,7 @@ $(document).ready(function () {
 
 	document.time_tracker = new TimeTracker();
 
-	test_time_tracker();
+	//test_time_tracker();
 	dump_storage();
 
 });
