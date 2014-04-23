@@ -1,5 +1,5 @@
 html {
-	background-color:rgba(100,100,100,0.8);
+	background-color:rgba(100,100,100,0.9);
 }
 
 input {
@@ -30,7 +30,7 @@ p {
 
 #time_tracker #centre_container {
 	margin: 20px auto;
-	width: 90%;
+	width: 70%;
 	border-radius: 15px;
 	background-color: white;
 	box-shadow: 2px 5px 5px 5px #666;
