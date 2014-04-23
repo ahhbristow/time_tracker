@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+ 		<script src="http://code.jquery.com/jquery-1.11.0.js"></script>
+ 		<script src="time_tracker.js"></script>
+		<link rel="stylesheet" type="text/css" href="main.css">
+	</head>
+
+
+	<body>
+		<script type="text/javascript">
+			$(document).ready(function() {
+				var use_local_storage = 1;
+				document.persistence_layer = new PersistenceLayer(use_local_storage);
+				document.time_tracker = new TimeTracker();	
+			});
+
+		</script>
+		<div id="time_tracker"></div>
+	</body>
+</html>
