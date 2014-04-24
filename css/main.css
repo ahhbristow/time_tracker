@@ -52,7 +52,7 @@
 }
 
 #time_tracker .projects_date_container h3 {
-	background:#ccc url(http://localhost/web/arrow.png) no-repeat center left;
+	background:#ccc url(images/arrow.png) no-repeat center left;
 	background-size:1em 1em;
 	cursor:pointer;
 	margin:0;
@@ -60,7 +60,7 @@
 }
 
 #time_tracker .projects_date_container.expanded h3 {
-	background:#ccc url(http://localhost/web/arrow_down.png) no-repeat center left;
+	background:#ccc url(images/arrow_down.png) no-repeat center left;
 	background-size:1em 1em;
 }
 
