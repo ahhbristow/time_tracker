@@ -458,7 +458,7 @@ TimeTracker.prototype.get_tracker_html = function () {
 	html += '      <div id="time_tracker_controls">';
 	html += '         <p>Add new project:</p>';
 	html += '         <input id="new_project_name" value="" />';
-	html += '         <button id="add_project">+</button>';
+	html += '         <button id="add_project"><span>+</span></button>';
 	html += '         <button id="clear_projects">Clear All</button>';
 	html += '      </div>';
 	html += '   </div>';
